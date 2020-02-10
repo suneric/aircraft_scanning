@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+
+<launch>
+  <arg name="joy_dev" default="/dev/input/js0" />
+  <node name="joy" pkg="joy" type="joy_node" output="screen" >
+    <param name="dev" value="$(arg joy_dev)" />
+    <param name="autorepeat_rate" value="10" />
+    <param name="coalesce_interval" value="0.01" />
+  </node>
+
+  <node name="teleop" pkg="aircraft_scanning_teleop" type="uav_scanning_teleop" output="screen">
+    <rosparam subst_value="true">
+      x_axis: 5
+      y_axis: 4
+      z_axis: 2
+      thrust_axis: 2
+      yaw_axis: 1
+
+      slow_button: 1
+      go_button: 4
+      stop_button: 2
+      interrupt_button: 3
+
+      camup_button: 6
+      camdown_button: 5
+    </rosparam>
+  </node>
+</launch>

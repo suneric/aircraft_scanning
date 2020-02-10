@@ -1,0 +1,4 @@
+<launch>
+  <node pkg="aircraft_scanning_visualize" type="visualize_execute.py" name="asv3d">
+  </node>
+</launch>

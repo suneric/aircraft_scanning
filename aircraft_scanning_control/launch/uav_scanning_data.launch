@@ -1,0 +1,4 @@
+<launch>
+	<node pkg="aircraft_scanning_control" type="pc_process.py" name="uav_scanning_data" output="screen">
+  </node>
+</launch>

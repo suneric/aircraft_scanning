@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+
+<robot name="quadrotor" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <xacro:property name="M_PI" value="3.1415926535897931" />
+
+    <!-- Included URDF Files -->
+    <xacro:include filename="$(find hector_quadrotor_description)/urdf/quadrotor_base.urdf.xacro" />
+
+    <!-- Instantiate quadrotor_base_macro once (has no parameters atm) -->
+    <xacro:quadrotor_base_macro />
+
+    <!-- add two links and joints for controlling the depth camera rs435 -->
+    <!-- "camera_link" will be created with camera_joint-->
+    <xacro:include filename="$(find aircraft_scanning_description)/urdf/quadrotor_camera.urdf.xacro"/>
+    <xacro:quadrotor_camera_macro parent="base_link"/>
+
+</robot>

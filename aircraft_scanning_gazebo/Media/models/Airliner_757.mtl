@@ -1,0 +1,18 @@
+# MTL written from F:\My Documents\Turbosquid\Boing 757\Product\Model\OBJ&Textures\OBJ\Airliner 757 (base colour).obj
+newmtl Boeing
+Kd 0.8 0.8 0.8
+Ns 256
+d 1
+illum 2
+Ka 0 0 0
+Ks 0.2 0.2 0.2
+map_Kd F:\My Documents\Turbosquid\Boing 757\Product\Model\LXO&Textures\base colour texture(new Delta logo).tga
+newmtl Landing_032Gear
+Kd 0.8 0.8 0.8
+Ns 256
+d 1
+illum 2
+Ka 0 0 0
+Ks 0.2 0.2 0.2
+map_Kd F:\My Documents\Turbosquid\Boing 757\Product\Model\LXO&Textures\landing gear base texture.tga
+newmtl base
