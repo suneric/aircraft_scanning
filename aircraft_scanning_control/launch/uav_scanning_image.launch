@@ -1,4 +1,4 @@
 <launch>
-	<node pkg="aircraft_scanning_control" type="rs_camera.py" name="uav_scanning_image" output="screen">
+	<node pkg="aircraft_scanning_control" type="camera.py" name="uav_scanning_image" output="screen">
   </node>
 </launch>

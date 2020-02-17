@@ -23,10 +23,14 @@ ${OpenCV_INCLUDE_DIRS}
 
 set(TARGET_H
     src/pcl_viewer.h
+    src/pcl_filter.h
+    src/pcl_segment.h
     )
 
 set(TARGET_SRC
     src/pcl_viewer.cpp
+    src/pcl_filter.cpp
+    src/pcl_segment.cpp
     src/main.cpp
     )
 
