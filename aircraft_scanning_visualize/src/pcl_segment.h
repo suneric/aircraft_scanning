@@ -11,10 +11,15 @@ namespace asv3d {
       PCLSegment(const WSPointCloudPtr srcCloud);
       ~PCLSegment();
 
-      bool Compute(int& nSegment, std::vector<WSPointCloudPtr>& segments);
+      WSPointCloudPtr PointCloud();
+      bool Compute(std::vector<WSPointCloudPtr>& segments);
+      bool ComputeNormals(WSPointCloudNormalPtr normals);
 
     private:
-      WSPointCloudPtr Segmentation(const WSPointCloudPtr cloud, double threashold, WSPointCloudNormalPtr& normals);
+      bool CylinderSegment(double threshold, double radius, std::vector<WSPointCloudPtr>& segments);
+      bool PlaneSegment(double threshold, std::vector<WSPointCloudPtr>& segments);
+      bool RegionGrowingSegment(double threashold, std::vector<WSPointCloudPtr>& segments);
+      bool EculideanSegment(double tolerance, std::vector<WSPointCloudPtr>& segments);
 
     private:
       WSPointCloudPtr m_cloud;

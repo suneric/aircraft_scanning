@@ -5,7 +5,7 @@ project(aircraft_scanning_visualize)
 add_compile_options(-std=c++11)
 
 find_package(catkin REQUIRED COMPONENTS roscpp std_msgs)
-find_package(PCL 1.8 REQUIRED COMPONENTS common io kdtree features surface keypoints octree recognition sample_consensus search segmentation stereo tracking visualization)
+find_package(PCL 1.8.0 REQUIRED COMPONENTS common io kdtree filters features surface keypoints octree recognition sample_consensus search segmentation stereo tracking visualization)
 find_package(OpenCV REQUIRED COMPONENTS core imgproc highgui)
 
 catkin_package(
@@ -25,15 +25,20 @@ set(TARGET_H
     src/pcl_viewer.h
     src/pcl_filter.h
     src/pcl_segment.h
+    src/pcl_octree.h
+    src/pcl_viewpoint.h
     )
 
 set(TARGET_SRC
     src/pcl_viewer.cpp
     src/pcl_filter.cpp
     src/pcl_segment.cpp
+    src/pcl_octree.cpp
+    src/pcl_viewpoint.cpp
     src/main.cpp
     )
 
+add_definitions(${PCL_DEFINITIONS})
 add_executable(${PROJECT_NAME}_exe ${TARGET_H} ${TARGET_SRC})
 set_target_properties(${PROJECT_NAME}_exe PROPERTIES OUTPUT_NAME asv3d PREFIX "")
 add_dependencies(${PROJECT_NAME}_exe ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})

@@ -40,7 +40,7 @@ class viewpoint_creator:
         #print("target vp", pv)
         # rotate normal in camera frame
         a = asin(-nc[1]) # about x
-        b = asin(nc[0]/cos(a)) # about y
+        b = atan2(nc[0],nc[2]) # about y
         c = 0 # about z
         mat_v = transform.rotation_translation(np.array([a,b,c]),pv)
         #print("vp matrix", mat_v)

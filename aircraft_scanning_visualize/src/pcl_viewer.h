@@ -4,6 +4,7 @@
 #include <string>
 #include <pcl/visualization/cloud_viewer.h>
 #include <pcl/visualization/pcl_visualizer.h>
+#include <pcl/point_types.h>
 #include <pcl/PolygonMesh.h>
 
 typedef pcl::PointXYZRGB WSPoint;
@@ -14,22 +15,31 @@ typedef pcl::Normal WSNormal;
 typedef pcl::PointCloud<WSNormal> WSPointCloudNormal;
 typedef WSPointCloudNormal::Ptr WSPointCloudNormalPtr;
 
+typedef pcl::PointXYZRGBNormal WSNormalPoint;
+typedef pcl::PointCloud<WSNormalPoint> WSNormalPointCloud;
+typedef WSNormalPointCloud::Ptr WSNormalPointCloudPtr;
+
 namespace asv3d
 {
-
   class PCLViewer
   {
   public:
     PCLViewer(const std::string& title);
     ~PCLViewer();
 
+    WSPointCloudPtr PointCloud();
     WSPointCloudPtr LoadPointCloud(const std::string& dir);
     bool SavePointCloud(const WSPointCloudPtr cloud, const std::string& dir);
-    
-    WSPointCloudPtr PointCloud();
-    void AddCoordinate(const Eigen::Affine3f& transform, const std::string& name);
-    void Update(const WSPointCloudPtr cloud, const WSPointCloudNormalPtr normal = nullptr);
-    void UpdateMesh(const pcl::PolygonMesh& mesh);
+
+    int CreateViewPort(double xmin,double ymin,double xmax,double ymax);
+
+    void AddPointCloud(const WSPointCloudPtr cloud, int viewport=0);
+    void AddNormals(const WSPointCloudPtr cloud, const WSPointCloudNormalPtr normal, int size, double arrow, int viewport=0);
+    void AddMesh(const pcl::PolygonMesh& mesh);
+    void AddArrows(const WSPointCloudPtr cloud, const WSPointCloudNormalPtr normal, double length, int viewport=0);
+    void AddCoordinateSystem(const Eigen::Affine3f& camPose, int idIndex, int viewport=0);
+    void AddCube(const WSPoint& point, double s, const std::string& id, double r,double g, double b, int viewport=0);
+
 
     bool IsStop() const;
     void SpinOnce(double duration = 10);

@@ -25,6 +25,15 @@ class trajectory_defined:
     def _create_trajectory(self):
         self._create_intermediate(0,-27,11,0.5*pi)
         # up part
+        # head
+        self._create_intermediate(-2,-29,2.5,0.3*pi,-0.1*pi)
+        self._create_intermediate(0,-29,2.5,0.5*pi,-0.1*pi)
+        self._create_intermediate(2,-29,2.5,0.7*pi,-0.1*pi)
+
+        # self._create_intermediate(-3,25.5,13,0.0)
+        # self._create_intermediate(0,29,13,-0.5*pi)
+        # self._create_intermediate(3,25.5,13,pi)
+
         self._create_updownpath([-2,2],[-27,18],9.0,0.5*pi,1) # fuselage
         self._create_updownpath([-1,-1],[18,27],9.0,0.5*pi,1)
         self._create_updownpath([1,1],[27,18],9.0,0.5*pi,1)
@@ -118,8 +127,8 @@ class trajectory_defined:
         self._create_intermediate(0,-27,11,-0.5*pi)
 
 
-    def _create_intermediate(self,x,y,z,yaw):
-        vp = self._create_viewpoint(x,y,z,yaw,0.0)
+    def _create_intermediate(self,x,y,z,yaw,angle=0.0):
+        vp = self._create_viewpoint(x,y,z,yaw,angle)
         self.trajectory.append(vp)
 
     def _create_updownpath(self,x_range,y_range,height,angle,offset):

@@ -1,27 +1,26 @@
 
+#include <math.h>
 #include <vector>
 #include "pcl_viewer.h"
+#include <pcl/io/ply_io.h>
 #include <pcl/common/centroid.h>
 #include <pcl/common/common.h>
-#include <pcl/io/ply_io.h>
-#include <math.h>
+#include <pcl/visualization/common/common.h>
 #include <boost/filesystem.hpp>
+#include "pcl_octree.h"
 
 using namespace asv3d;
 
 PCLViewer::PCLViewer(const std::string& title)
 {
   m_viewer = new pcl::visualization::PCLVisualizer(title);
-  m_viewer->setBackgroundColor(0,0,0);
-  m_viewer->addCoordinateSystem(1.0, "axis", 0);
+  m_viewer->initCameraParameters();
   m_viewer->setSize(1024,748);
-  //m_viewer->setCameraFieldOfView(0.8);
   m_ptCloud = nullptr;
 }
 
 PCLViewer::~PCLViewer()
 {
-  m_viewer->close();
   delete m_viewer;
   m_ptCloud = nullptr;
 }
@@ -31,27 +30,59 @@ bool PCLViewer::IsStop() const
   return m_viewer->wasStopped();
 }
 
-void PCLViewer::Update(const WSPointCloudPtr cloud, const WSPointCloudNormalPtr normal)
+int PCLViewer::CreateViewPort(double xmin,double ymin,double xmax,double ymax)
+{
+  int vp(0);
+  m_viewer->createViewPort(xmin,ymin,xmax,ymax,vp);
+  m_viewer->setBackgroundColor(0.618,0.618,0.618,vp);
+  m_viewer->addCoordinateSystem(3,"global",vp);
+  return vp;
+}
+
+void PCLViewer::AddPointCloud(const WSPointCloudPtr cloud, int vp)
 {
   m_ptCloud = cloud;
-  if (!m_viewer->updatePointCloud(cloud, "cloud"))
-  {
-    m_viewer->addPointCloud<WSPoint>(cloud, "cloud");
-    if (normal)
-       m_viewer->addPointCloudNormals<WSPoint, WSNormal>(cloud, normal, 1000, 0.5, "normals");
+  std::string name("cloud");
+  name.append(std::to_string(vp));
+  m_viewer->addPointCloud<WSPoint>(m_ptCloud,name,vp);
+  m_viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE,1,name,vp);
+  // set camera position
+  Eigen::Vector4f centroid, min, max;
+  pcl::compute3DCentroid(*cloud, centroid);
+  pcl::getMinMax3D<WSPoint>(*cloud, min, max);
+  double dRadius = 0.5*std::sqrt((max[0]-min[0])*(max[0]-min[0])+(max[1]-min[1])*(max[1]-min[1])+(max[2]-min[2])*(max[2]-min[2]));
+  m_viewer->setCameraPosition(dRadius,dRadius,1,centroid[0],centroid[1],centroid[2],0,0,1,vp);
+}
 
-    m_viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "cloud");
-    // set camera position
-    Eigen::Vector4f centroid;
-    Eigen::Vector4f min, max;
-    pcl::compute3DCentroid(*cloud, centroid);
-    pcl::getMinMax3D<pcl::PointXYZRGB>(*cloud, min, max);
-    double dRadius = 0.5*std::sqrt((max[0]-min[0])*(max[0]-min[0])+(max[1]-min[1])*(max[1]-min[1])+(max[2]-min[2])*(max[2]-min[2]));
-    m_viewer->setCameraPosition(dRadius, dRadius, 1, centroid[0], centroid[1], centroid[2], 0, 0, 1);
+void PCLViewer::AddNormals(const WSPointCloudPtr cloud, const WSPointCloudNormalPtr normal, int size, double arrow, int vp)
+{
+  std::string name("normal");
+  name.append(std::to_string(vp));
+  m_viewer->addPointCloudNormals<WSPoint, WSNormal>(cloud,normal,size,arrow,name,vp);
+}
+
+void PCLViewer::AddArrows(const WSPointCloudPtr cloud, const WSPointCloudNormalPtr normal, double length, int vp)
+{
+  std::string name("arrow");
+  name.append(std::to_string(vp));
+  for (size_t i = 0; i < cloud->points.size(); ++i)
+  {
+    WSPoint pt = cloud->points[i];
+    WSNormal nm = normal->points[i];
+    Eigen::Vector3f vec(nm.normal_x,nm.normal_y,nm.normal_z);
+    Eigen::Vector3f pt1(pt.x,pt.y,pt.z);
+    Eigen::Vector3f nvc = vec.normalized();
+    Eigen::Vector3f pt2 = pt1 + length*nvc;
+    WSPoint pte;
+    pte.x = pt2[0];
+    pte.y = pt2[1];
+    pte.z = pt2[2];
+    name.append(std::to_string(i));
+    m_viewer->addArrow(pt,pte,0.0,1.0,0.0,false,name,vp);
   }
 }
 
-void PCLViewer::UpdateMesh(const pcl::PolygonMesh& mesh)
+void PCLViewer::AddMesh(const pcl::PolygonMesh& mesh)
 {
   if (!m_viewer->updatePolygonMesh(mesh, "mesh"))
   {
@@ -60,10 +91,12 @@ void PCLViewer::UpdateMesh(const pcl::PolygonMesh& mesh)
   }
 }
 
-void PCLViewer::AddCoordinate(const Eigen::Affine3f& transform, const std::string& name)
+void PCLViewer::AddCoordinateSystem(const Eigen::Affine3f& camPose, int idIndex, int vp)
 {
-  m_viewer->removeCoordinateSystem(name);
-  m_viewer->addCoordinateSystem(0.5, transform, name, 0);
+  std::string name("ccs");
+  name.append(std::to_string(vp));
+  name.append(std::to_string(idIndex));
+  m_viewer->addCoordinateSystem(0.5,camPose,name,vp);
 }
 
 void PCLViewer::SpinOnce(double duration)
@@ -123,4 +156,12 @@ bool PCLViewer::SavePointCloud(const WSPointCloudPtr cloud, const std::string& d
   if (res >= 0)
     std::cout << "save as " << filePath << std::endl;
   return res >= 0;
+}
+
+void PCLViewer::AddCube(const WSPoint& point, double s, const std::string& cubeName, double r,double g, double b, int vp)
+{
+  m_viewer->addCube(point.x-s,point.x+s,point.y-s,point.y+s,point.z-s,point.z+s,r,g,b,cubeName,vp);
+  //m_viewer->addSphere(ptCenter,0.5,cubeName);
+  m_viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_REPRESENTATION, 1, cubeName);
+  m_viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_OPACITY, 0.2, cubeName);
 }
