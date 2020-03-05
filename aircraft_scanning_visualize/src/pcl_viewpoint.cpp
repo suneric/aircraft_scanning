@@ -1,6 +1,8 @@
 #include "pcl_viewpoint.h"
 #include "pcl_filter.h"
 #include <math.h>
+#include <fstream>
+#include <sstream>
 
 #include <pcl/filters/frustum_culling.h>
 #include <pcl/features/normal_3d.h>
@@ -20,11 +22,11 @@ WSPointCloudPtr PCLViewPoint::CameraViewVoxels(const PCLOctree& tree, const Eige
       WSPoint centroid = viewCloud->points[i];
       Eigen::Vector3f endPt(centroid.x, centroid.y, centroid.z);
       std::vector<WSPoint> intesects;
+      // get outer side voxels, with max intersected voxel number is 1
       int nRes = tree.GetIntersectedVoxelCenters(cameraPt, endPt-cameraPt, 1, intesects);
-      if (nRes == 1 && intesects.size() == 1)
+      if (nRes == 1)
         visibleVoxels.push_back(intesects[0]);
     }
-
     // voxel index
     std::vector<WSPoint> visibleCentroids;
     for (size_t i = 0; i < visibleVoxels.size(); ++i)
@@ -38,14 +40,88 @@ WSPointCloudPtr PCLViewPoint::CameraViewVoxels(const PCLOctree& tree, const Eige
     }
 
     WSPointCloudPtr visibleVoxelCloud(new WSPointCloud);
-    visibleVoxelCloud->points.resize(visibleVoxels.size());
+    visibleVoxelCloud->points.resize(visibleCentroids.size());
     visibleVoxelCloud->points.assign(visibleCentroids.begin(), visibleCentroids.end());
     return visibleVoxelCloud;
   }
   return nullptr;
 }
 
-void PCLViewPoint::GenerateCameraPositions(const PCLOctree& tree,double distance,std::vector<Eigen::Affine3f>& cameras)
+void PCLViewPoint::GenerateCameraPositions(const PCLOctree& tree,double distance,std::vector<Eigen::Affine3f>& cameras, int type)
+{
+  if (type == 0)
+    CameraPositionWithVoxelAverageNormal(tree, distance, cameras);
+  else
+    CameraPositionWithVoxelCube(tree, distance, cameras, type);
+}
+
+void PCLViewPoint::CameraPositionWithVoxelCube(const PCLOctree& tree, double distance, std::vector<Eigen::Affine3f>& cameras, int type)
+{
+  WSPointCloudPtr vCloud = tree.VoxelCentroidCloud();
+  double voxelSideLen = tree.VoxelSideLength();
+  for (size_t i = 0; i < vCloud->points.size(); ++i)
+  {
+    Eigen::Vector3f center(vCloud->points[i].x, vCloud->points[i].y, vCloud->points[i].z);
+    std::vector<Eigen::Vector3f> points;
+    if (type == 1)
+      VoxelFaceCenters(center, voxelSideLen, points);
+    else if (type == 2)
+      VoxelVertices(center, voxelSideLen, points);
+    else if (type == 3)
+      VoxelEdgeCenters(center, voxelSideLen, points);
+
+    for (size_t j = 0; j < points.size(); ++j)
+    {
+      Eigen::Vector3f nm = points[j]-center;
+      std::vector<WSPoint> intesects;
+      int nResPositive = tree.GetIntersectedVoxelCenters(center, nm, 2, intesects);
+      if (nResPositive == 1)
+      {
+        Eigen::Vector3f camera;
+        if (CameraPosition(center, nm, tree.Resolution(), distance, camera))
+          cameras.push_back(CameraPose(camera,-nm));
+      }
+    }
+  }
+}
+
+void PCLViewPoint::VoxelFaceCenters(const Eigen::Vector3f& center, double voxelSideLen, std::vector<Eigen::Vector3f>& points)
+{
+  points.push_back(Eigen::Vector3f(center.x()-0.5*voxelSideLen, center.y(), center.z()));
+  points.push_back(Eigen::Vector3f(center.x()+0.5*voxelSideLen, center.y(), center.z()));
+  points.push_back(Eigen::Vector3f(center.x(), center.y()-0.5*voxelSideLen, center.z()));
+  points.push_back(Eigen::Vector3f(center.x(), center.y()+0.5*voxelSideLen, center.z()));
+  points.push_back(Eigen::Vector3f(center.x(), center.y(), center.z()-0.5*voxelSideLen));
+  points.push_back(Eigen::Vector3f(center.x(), center.y(), center.z()+0.5*voxelSideLen));
+}
+void PCLViewPoint::VoxelVertices(const Eigen::Vector3f& center, double voxelSideLen, std::vector<Eigen::Vector3f>& points)
+{
+  points.push_back(Eigen::Vector3f(center.x()-0.5*voxelSideLen, center.y()-0.5*voxelSideLen, center.z()-0.5*voxelSideLen));
+  points.push_back(Eigen::Vector3f(center.x()-0.5*voxelSideLen, center.y()-0.5*voxelSideLen, center.z()+0.5*voxelSideLen));
+  points.push_back(Eigen::Vector3f(center.x()-0.5*voxelSideLen, center.y()+0.5*voxelSideLen, center.z()-0.5*voxelSideLen));
+  points.push_back(Eigen::Vector3f(center.x()-0.5*voxelSideLen, center.y()+0.5*voxelSideLen, center.z()+0.5*voxelSideLen));
+  points.push_back(Eigen::Vector3f(center.x()+0.5*voxelSideLen, center.y()-0.5*voxelSideLen, center.z()-0.5*voxelSideLen));
+  points.push_back(Eigen::Vector3f(center.x()+0.5*voxelSideLen, center.y()-0.5*voxelSideLen, center.z()+0.5*voxelSideLen));
+  points.push_back(Eigen::Vector3f(center.x()+0.5*voxelSideLen, center.y()+0.5*voxelSideLen, center.z()-0.5*voxelSideLen));
+  points.push_back(Eigen::Vector3f(center.x()+0.5*voxelSideLen, center.y()+0.5*voxelSideLen, center.z()+0.5*voxelSideLen));
+}
+void PCLViewPoint::VoxelEdgeCenters(const Eigen::Vector3f& center, double voxelSideLen, std::vector<Eigen::Vector3f>& points)
+{
+  points.push_back(Eigen::Vector3f(center.x(), center.y()-0.5*voxelSideLen, center.z()-0.5*voxelSideLen));
+  points.push_back(Eigen::Vector3f(center.x(), center.y()-0.5*voxelSideLen, center.z()+0.5*voxelSideLen));
+  points.push_back(Eigen::Vector3f(center.x(), center.y()+0.5*voxelSideLen, center.z()-0.5*voxelSideLen));
+  points.push_back(Eigen::Vector3f(center.x(), center.y()+0.5*voxelSideLen, center.z()+0.5*voxelSideLen));
+  points.push_back(Eigen::Vector3f(center.x()-0.5*voxelSideLen, center.y(), center.z()-0.5*voxelSideLen));
+  points.push_back(Eigen::Vector3f(center.x()+0.5*voxelSideLen, center.y(), center.z()+0.5*voxelSideLen));
+  points.push_back(Eigen::Vector3f(center.x()-0.5*voxelSideLen, center.y(), center.z()-0.5*voxelSideLen));
+  points.push_back(Eigen::Vector3f(center.x()+0.5*voxelSideLen, center.y(), center.z()+0.5*voxelSideLen));
+  points.push_back(Eigen::Vector3f(center.x()-0.5*voxelSideLen, center.y()-0.5*voxelSideLen, center.z()));
+  points.push_back(Eigen::Vector3f(center.x()+0.5*voxelSideLen, center.y()+0.5*voxelSideLen, center.z()));
+  points.push_back(Eigen::Vector3f(center.x()-0.5*voxelSideLen, center.y()-0.5*voxelSideLen, center.z()));
+  points.push_back(Eigen::Vector3f(center.x()+0.5*voxelSideLen, center.y()+0.5*voxelSideLen, center.z()));
+}
+
+void PCLViewPoint::CameraPositionWithVoxelAverageNormal(const PCLOctree& tree, double distance, std::vector<Eigen::Affine3f>& cameras)
 {
   WSPointCloudPtr vCloud = tree.VoxelCentroidCloud();
   WSPointCloudNormalPtr vNormal = tree.VoxelAverageNormals();
@@ -111,6 +187,33 @@ bool PCLViewPoint::FilterViewPoint(const PCLOctree& tree, const Eigen::Affine3f&
   return false;
 }
 
+Eigen::Affine3f PCLViewPoint::ViewPoint2CameraPose(const ViewPoint& vp)
+{
+  Eigen::Vector3f t;
+  Eigen::Quaternionf q;
+  t.x() = vp.quadrotor_pose.pos_x;
+  t.y() = vp.quadrotor_pose.pos_y;
+  t.z() = vp.quadrotor_pose.pos_z;
+  q.x() = vp.quadrotor_pose.ori_x;
+  q.y() = vp.quadrotor_pose.ori_y;
+  q.z() = vp.quadrotor_pose.ori_z;
+  q.w() = vp.quadrotor_pose.ori_w;
+  Eigen::Matrix3f rot = q.normalized().toRotationMatrix();
+
+  Eigen::Matrix4f quadrotor_pose;
+  quadrotor_pose.setIdentity();
+  quadrotor_pose.block<3,3>(0,0)=rot;
+  quadrotor_pose.block<3,1>(0,3)=t;
+
+  double angle = vp.camera_angle;
+  Eigen::Matrix4f quad2Cam = Quadrotor2Camera(angle);
+  Eigen::Matrix4f camera_pose = quadrotor_pose*quad2Cam;
+  Eigen::Affine3f res;
+  res.matrix() = camera_pose;
+
+  return res;
+}
+
 ViewPoint PCLViewPoint::CreateViewPoint(const Eigen::Affine3f& camera)
 {
   Eigen::Matrix4f mat = camera.matrix();
@@ -119,6 +222,18 @@ ViewPoint PCLViewPoint::CreateViewPoint(const Eigen::Affine3f& camera)
   double yaw =0,pitch=0,roll=0;
   Quaternion2EularAngles(orientation,yaw,pitch,roll);
   // std::cout << "yaw: " << yaw <<", pitch: " << pitch << ", roll: " << roll << std::endl;
+  Eigen::Matrix4f quad2Cam = Quadrotor2Camera(pitch);
+  Eigen::Matrix4f quadPoseMatrix = mat*quad2Cam.inverse();
+  Cartesion quadPose;
+  Matrix2Cartesion(quadPoseMatrix, quadPose);
+  ViewPoint vp;
+  vp.quadrotor_pose = quadPose;
+  vp.camera_angle = pitch;
+  return vp;
+}
+
+Eigen::Matrix4f PCLViewPoint::Quadrotor2Camera(double camera_angle)
+{
   Eigen::Matrix4f quadBase;
   quadBase(0,0) = 1;
   quadBase(0,1) = 0;
@@ -137,32 +252,24 @@ ViewPoint PCLViewPoint::CreateViewPoint(const Eigen::Affine3f& camera)
   quadBase(3,2) = 0;
   quadBase(3,3) = 1;
   Eigen::Matrix4f cameraJoint;
-  cameraJoint(0,0) = cos(pitch);
+  cameraJoint(0,0) = cos(camera_angle);
   cameraJoint(0,1) = 0;
-  cameraJoint(0,2) = sin(pitch);
+  cameraJoint(0,2) = sin(camera_angle);
   cameraJoint(0,3) = 0.0358;
   cameraJoint(1,0) = 0;
   cameraJoint(1,1) = 1;
   cameraJoint(1,2) = 0;
   cameraJoint(1,3) = 0;
-  cameraJoint(2,0) = -sin(pitch);
+  cameraJoint(2,0) = -sin(camera_angle);
   cameraJoint(2,1) = 0;
-  cameraJoint(2,2) = cos(pitch);
+  cameraJoint(2,2) = cos(camera_angle);
   cameraJoint(2,3) = 0;
   cameraJoint(3,0) = 0;
   cameraJoint(3,1) = 0;
   cameraJoint(3,2) = 0;
   cameraJoint(3,3) = 1;
-
   Eigen::Matrix4f quad2Camera = quadBase*cameraJoint;
-  Eigen::Matrix4f quadPoseMatrix = mat*quad2Camera.inverse();
-  Cartesion quadPose;
-  Matrix2Cartesion(quadPoseMatrix, quadPose);
-
-  ViewPoint vp;
-  vp.quadrotor_pose = quadPose;
-  vp.camera_angle = pitch;
-  return vp;
+  return quad2Camera;
 }
 
 Eigen::Affine3f PCLViewPoint::CameraPose(const Eigen::Vector3f& center, const Eigen::Vector3f& normal)
@@ -235,17 +342,15 @@ Eigen::Matrix4f PCLViewPoint::CameraPoseTransform(const Eigen::Matrix4f& mat)
 
 void PCLViewPoint::Matrix2Cartesion(const Eigen::Matrix4f& mat, Cartesion& quadPose)
 {
-  double qw = 0.5*sqrt(1+mat(0,0)+mat(1,1)+mat(2,2));
-  double qx = (mat(2,1)-mat(1,2))/(4*qw);
-  double qy = (mat(0,2)-mat(2,0))/(4*qw);
-  double qz = (mat(1,0)-mat(0,1))/(4*qw);
+  Eigen::Matrix3f affine = mat.topLeftCorner(3,3);
+  Eigen::Quaternionf q(affine);
   quadPose.pos_x = mat(0,3);
   quadPose.pos_y = mat(1,3);
   quadPose.pos_z = mat(2,3);
-  quadPose.ori_w = qw;
-  quadPose.ori_x = qx;
-  quadPose.ori_y = qy;
-  quadPose.ori_z = qz;
+  quadPose.ori_w = q.w();
+  quadPose.ori_x = q.x();
+  quadPose.ori_y = q.y();
+  quadPose.ori_z = q.z();
 }
 
 void PCLViewPoint::Quaternion2EularAngles(const Eigen::Quaternionf& q, double& yaw, double& pitch, double& roll)
@@ -260,4 +365,59 @@ void PCLViewPoint::Quaternion2EularAngles(const Eigen::Quaternionf& q, double& y
   double sy_cp = 2*(q.w()*q.z()+q.x()*q.y());
   double cy_cp = 1-2*(q.y()*q.y()+q.z()*q.z());
   yaw = atan2(sy_cp, cy_cp);
+}
+
+
+void PCLViewPoint::Save2File(const std::string& output,
+                             std::vector<ViewPoint>& vps,
+                             std::map<int, std::vector<int> >& voxelMap)
+{
+  std::ofstream tFile(output);
+  for (size_t i = 0; i < vps.size(); ++i)
+  {
+    ViewPoint viewpt = vps[i];
+    // each line: viewpoint_idx px py pz ox oy oz ow angle voxel_indices ... \n
+    tFile << i << " " << viewpt.quadrotor_pose.pos_x << " "
+                      << viewpt.quadrotor_pose.pos_y << " "
+                      << viewpt.quadrotor_pose.pos_z << " "
+                      << viewpt.quadrotor_pose.ori_x << " "
+                      << viewpt.quadrotor_pose.ori_y << " "
+                      << viewpt.quadrotor_pose.ori_z << " "
+                      << viewpt.quadrotor_pose.ori_w << " "
+                      << viewpt.camera_angle << " ";
+    // std::cout << viewVoxelMap[i].size() << std::endl;
+    for (size_t j = 0; j < voxelMap[i].size(); ++j)
+    {
+      int vIndex = voxelMap[i][j];
+      tFile << vIndex;
+      if (j == voxelMap[i].size()-1)
+        tFile << "\n";
+      else
+        tFile << " ";
+    }
+  }
+  tFile.close();
+}
+
+void PCLViewPoint::LoadTrajectory(const std::string& input, std::vector<ViewPoint>& vps)
+{
+  std::ifstream tFile(input);
+  std::string line;
+  while (std::getline(tFile, line))
+  {
+    std::stringstream linestream(line);
+    std::string index,px,py,pz,ox,oy,oz,ow,angle;
+    linestream >> index >> px >> py >> pz >> ox >> oy >> oz >> ow >> angle;
+    ViewPoint vp;
+    vp.quadrotor_pose.pos_x = std::stod(px);
+    vp.quadrotor_pose.pos_y = std::stod(py);
+    vp.quadrotor_pose.pos_z = std::stod(pz);
+    vp.quadrotor_pose.ori_x = std::stod(ox);
+    vp.quadrotor_pose.ori_y = std::stod(oy);
+    vp.quadrotor_pose.ori_z = std::stod(oz);
+    vp.quadrotor_pose.ori_w = std::stod(ow);
+    vp.camera_angle = std::stod(angle);
+    vps.push_back(vp);
+  }
+  tFile.close();
 }

@@ -1,0 +1,4 @@
+<launch>
+  <node pkg="aircraft_scanning_plan" type="train.py" name="dqn_train">
+  </node>
+</launch>

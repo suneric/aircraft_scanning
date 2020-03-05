@@ -17,6 +17,7 @@ PCLViewer::PCLViewer(const std::string& title)
   m_viewer->initCameraParameters();
   m_viewer->setSize(1024,748);
   m_ptCloud = nullptr;
+  m_viewer->setBackgroundColor(1,1,1);
 }
 
 PCLViewer::~PCLViewer()
@@ -34,7 +35,8 @@ int PCLViewer::CreateViewPort(double xmin,double ymin,double xmax,double ymax)
 {
   int vp(0);
   m_viewer->createViewPort(xmin,ymin,xmax,ymax,vp);
-  m_viewer->setBackgroundColor(0.618,0.618,0.618,vp);
+  // m_viewer->setBackgroundColor(0.618,0.618,0.618,vp);
+  m_viewer->setBackgroundColor(1,1,1,vp);
   m_viewer->addCoordinateSystem(3,"global",vp);
   return vp;
 }
@@ -51,7 +53,7 @@ void PCLViewer::AddPointCloud(const WSPointCloudPtr cloud, int vp)
   pcl::compute3DCentroid(*cloud, centroid);
   pcl::getMinMax3D<WSPoint>(*cloud, min, max);
   double dRadius = 0.5*std::sqrt((max[0]-min[0])*(max[0]-min[0])+(max[1]-min[1])*(max[1]-min[1])+(max[2]-min[2])*(max[2]-min[2]));
-  m_viewer->setCameraPosition(dRadius,dRadius,1,centroid[0],centroid[1],centroid[2],0,0,1,vp);
+  m_viewer->setCameraPosition(dRadius,-dRadius,dRadius,centroid[0],centroid[1],centroid[2],0,0,1,vp);
 }
 
 void PCLViewer::AddNormals(const WSPointCloudPtr cloud, const WSPointCloudNormalPtr normal, int size, double arrow, int vp)
@@ -91,12 +93,17 @@ void PCLViewer::AddMesh(const pcl::PolygonMesh& mesh)
   }
 }
 
-void PCLViewer::AddCoordinateSystem(const Eigen::Affine3f& camPose, int idIndex, int vp)
+void PCLViewer::AddCoordinateSystem(const Eigen::Affine3f& camPose, int idIndex, int vp, bool removeall)
 {
   std::string name("ccs");
   name.append(std::to_string(vp));
   name.append(std::to_string(idIndex));
-  m_viewer->addCoordinateSystem(0.5,camPose,name,vp);
+  if (removeall)
+    m_viewer->removeAllCoordinateSystems(vp);
+  else
+    m_viewer->removeCoordinateSystem(name,vp);
+
+  m_viewer->addCoordinateSystem(1.0,camPose,name,vp);
 }
 
 void PCLViewer::SpinOnce(double duration)
@@ -164,4 +171,13 @@ void PCLViewer::AddCube(const WSPoint& point, double s, const std::string& cubeN
   //m_viewer->addSphere(ptCenter,0.5,cubeName);
   m_viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_REPRESENTATION, 1, cubeName);
   m_viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_OPACITY, 0.2, cubeName);
+  m_viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_LINE_WIDTH, 2, cubeName);
+}
+
+void PCLViewer::AddText(const std::string& text, const std::string& id, int vp)
+{
+  if (m_viewer->contains(id))
+    m_viewer->updateText(text,50,50,id);
+  else
+    m_viewer->addText(text,50,50,30,0.0,0.0,0.0,id,vp);
 }

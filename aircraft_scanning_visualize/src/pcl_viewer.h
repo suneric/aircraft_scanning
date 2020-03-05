@@ -37,12 +37,13 @@ namespace asv3d
     void AddNormals(const WSPointCloudPtr cloud, const WSPointCloudNormalPtr normal, int size, double arrow, int viewport=0);
     void AddMesh(const pcl::PolygonMesh& mesh);
     void AddArrows(const WSPointCloudPtr cloud, const WSPointCloudNormalPtr normal, double length, int viewport=0);
-    void AddCoordinateSystem(const Eigen::Affine3f& camPose, int idIndex, int viewport=0);
+    void AddCoordinateSystem(const Eigen::Affine3f& camPose, int idIndex, int viewport=0, bool removeall=false);
     void AddCube(const WSPoint& point, double s, const std::string& id, double r,double g, double b, int viewport=0);
+    void AddText(const std::string& text, const std::string& id, int viewport=0);
 
 
     bool IsStop() const;
-    void SpinOnce(double duration = 10);
+    void SpinOnce(double duration = 1);
     void Spin() const;
 
   private:

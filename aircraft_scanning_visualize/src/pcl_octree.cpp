@@ -151,7 +151,7 @@ bool PCLOctree::EvaluateVoxelNormal(const WSPointCloudPtr cloud, const WSPoint& 
     std::vector<int> intersectIndices;
     int nIntersectPositive = m_os->getIntersectedVoxelIndices(pt,nm,intersectIndices);
     int nInterSectNegative = m_os->getIntersectedVoxelIndices(pt,-nm,intersectIndices);
-    if (nIntersectPositive > nInterSectNegative)
+    if (nIntersectPositive > 1 && nInterSectNegative == 1)
     {
       nm = -nm;
       bFlip = true;
