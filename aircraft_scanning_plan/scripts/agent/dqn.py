@@ -98,8 +98,9 @@ class DQNAgent:
                 actions[vvi] = 0.0
             vp_idx = np.argmax(actions) # most possible actions in unvisited vps
         else:
-            uvi = np.random.randint(len(unvisited_vp_indices))
-            vp_idx = unvisited_vp_indices[uvi]
+            if len(unvisited_vp_indices) > 0:
+                uvi = np.random.randint(len(unvisited_vp_indices))
+                vp_idx = unvisited_vp_indices[uvi]
         return vp_idx
 
     # build multi-layer perceptron nueral network

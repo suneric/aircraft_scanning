@@ -13,6 +13,13 @@ import argparse
 from env.uav_scanning_env import UAVScanningEnv, ViewPoint
 from agent.dqn import DQNAgent
 
+def get_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--ep', type=int, default=10000)
+    parser.add_argument('--lr', type=float, default=0.001)
+    parser.add_argument('--bs', type=int, default=2048)
+    return parser.parse_args()
+
 def create_agent_params(name, state_dim, action_dim, layer_sizes, learning_rate, mem_cap):
     params = {}
     params['name'] = name
@@ -42,17 +49,18 @@ def create_trajectory(env, agent, dir, index):
     print("save trajectory to ", os.path.join(dir,file))
 
 if __name__ == "__main__":
-    #args = get_args()
+    args = get_args()
+    print("episode:",args.ep,"learning rate:",args.lr,"batcg size:",args.bs)
     env = UAVScanningEnv()
     viewpoints = os.path.join(os.path.dirname(sys.path[0]+"/viewpoint/"),"viewpoints.txt")
     env.load(viewpoints)
 
     state_dim = env.voxels_count();
     action_dim = env.viewpoints_count();
-    layer_sizes = [500,500]
-    learning_rate = 0.001
-    mem_cap = 50000
-    batch_size = 500
+    layer_sizes = [64,64,64] # [512,512]
+    learning_rate = args.lr
+    mem_cap = 100000
+    batch_size = args.bs
     discount_rate = 0.99
     decay_rate = 0.9999
     agent_params = create_agent_params("active",state_dim,action_dim,layer_sizes,learning_rate, mem_cap)
@@ -71,7 +79,7 @@ if __name__ == "__main__":
     start_vp = ViewPoint(0,-30,5,0,0,0,0,1,0)
     step = 0;
     ep = 1;
-    while ep <= 10000:
+    while ep <= args.ep:
         env.reset(start_vp)
         voxels_state = env.voxels_state_array()
         vps_state = env.viewpoints_state_array()
