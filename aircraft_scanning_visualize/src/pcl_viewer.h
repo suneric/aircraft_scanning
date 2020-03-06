@@ -40,6 +40,7 @@ namespace asv3d
     void AddCoordinateSystem(const Eigen::Affine3f& camPose, int idIndex, int viewport=0, bool removeall=false);
     void AddCube(const WSPoint& point, double s, const std::string& id, double r,double g, double b, int viewport=0);
     void AddText(const std::string& text, const std::string& id, int viewport=0);
+    void AddLine(const WSPoint& startPt, const WSPoint& endPt, int idx, double r,double g, double b, int viewport=0);
 
 
     bool IsStop() const;

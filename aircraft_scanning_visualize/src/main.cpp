@@ -91,7 +91,7 @@ void AddCubes(PCLViewer* viewer,const std::vector<WSPoint>& points, const std::s
   }
 }
 
-void DisplayTrajectory(PCLViewer* viewer, const std::string& dir, const std::string& file, double resolution)
+void DisplayTrajectory(PCLViewer* viewer, const std::string& dir, const std::string& file, double resolution, int type)
 {
   PCLViewPoint viewCreator;
   std::vector<ViewPoint> vps;
@@ -117,10 +117,24 @@ void DisplayTrajectory(PCLViewer* viewer, const std::string& dir, const std::str
   // mtx.lock();
   // AddCubes(viewer, centroids, "octree_voxel", voxelLen, 0, 0.0,0.0,1.0);
   // mtx.unlock();
+
+  WSPoint startPt, endPt;
   std::vector<int> coveredVoxels;
   for (size_t i = 0; i < vps.size(); ++i)
   {
       Eigen::Affine3f camera = viewCreator.ViewPoint2CameraPose(vps[i]);
+      if (i == 0) {
+        endPt.x = camera.matrix()(0,3);
+        endPt.y = camera.matrix()(1,3);
+        endPt.z = camera.matrix()(2,3);
+        startPt = endPt;
+      } else {
+        startPt = endPt;
+        endPt.x = camera.matrix()(0,3);
+        endPt.y = camera.matrix()(1,3);
+        endPt.z = camera.matrix()(2,3);
+      }
+
       std::vector<int> indices;
       WSPointCloudPtr voxelCloud = viewCreator.CameraViewVoxels(octree, camera, indices);
       std::vector<WSPoint> vCenters;
@@ -144,8 +158,25 @@ void DisplayTrajectory(PCLViewer* viewer, const std::string& dir, const std::str
       coverage.append(std::to_string(dCoverage)).append(" %");
       text.append(coverage);
       viewer->AddText(text, "text");
-      viewer->AddCoordinateSystem(camera,i,0,true);
-      AddCubes(viewer, vCenters, std::to_string(i), voxelLen, 0, 1.0,0.0,0.0);
+      if (type == -1)
+      {
+        viewer->AddCoordinateSystem(camera,i,0,true);
+      }
+      else if (type == -2)
+      {
+        AddCubes(viewer, vCenters, std::to_string(i), voxelLen, 0, 1.0,0.0,0.0);
+      }
+      else if (type == -3)
+      {
+        viewer->AddCoordinateSystem(camera,i,0,true);
+        viewer->AddLine(startPt,endPt,i,0.0,0.0,0.0);
+      }
+      else
+      {
+        viewer->AddCoordinateSystem(camera,i,0,true);
+        viewer->AddLine(startPt,endPt,i,0.0,0.0,0.0);
+        AddCubes(viewer, vCenters, std::to_string(i), voxelLen, 0, 1.0,0.0,0.0);
+      }
       mtx.unlock();
 
       // Sleep for 2 seconds for the ply file
@@ -183,7 +214,7 @@ int main(int argc, char** argv) try
     }
     else
     {
-      std::thread t(DisplayTrajectory, &viewer, dir, trajectory, resolution);
+      std::thread t(DisplayTrajectory, &viewer, dir, trajectory, resolution, sampleType);
       while (!viewer.IsStop()) {
         mtx.lock();
         viewer.SpinOnce();
@@ -387,6 +418,8 @@ int ParseArguments(int argc, char** argv,
       trajectory = std::string(argv[3]);
     if (argc > 4)
       resolution = std::stod(argv[4]);
+    if (argc > 5)
+      sampleType = std::stoi(argv[5]);
     return 1;
   }
   else if (task.compare("-m") == 0 || task.compare("-merge") == 0)

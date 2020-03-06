@@ -33,13 +33,12 @@ class UAVScanningEnv(object):
     def __init__(self):
         self.viewpoints = []
         self.allvoxels = []
+
         # need to update each step
         self.obs_voxels = []
         self.unvisited_vp = []
         self.visited_vp = []
         self.current_vp = None
-        self.total_reward = 0
-        self.done = False
 
         # state
         self.voxels_state = []
@@ -74,7 +73,7 @@ class UAVScanningEnv(object):
     def save_visited(self,file):
         with open(file, 'w') as writer:
             for vpIdx in self.visited_vp:
-                vp = self._viewpoint(vpIdx)
+                vp = self.viewpoints[vpIdx]
                 idx = vp.index()
                 pos = vp.quadrotor()
                 angle = vp.camera()
@@ -97,22 +96,15 @@ class UAVScanningEnv(object):
         writer.close()
 
     def reset(self, startVp):
-        self.obs_voxels = []
-        for i in range(0,len(self.viewpoints)):
-            self.unvisited_vp.append(i)
-        self.visited_vp = []
         self.current_vp = startVp
-        self.total_reward = 0
-        self.done = False
+        self.obs_voxels = []
+        self.visited_vp = []
+        self.unvisited_vp = [i for i in range(self.viewpoints_count())]
+        #print(self.unvisited_vp)
         # voxels state are not visited
         self.voxels_state = [0]*len(self.allvoxels)
         # viewpoints state are not visited
         self.viewpoints_state = [0]*len(self.viewpoints)
-
-    def completed(self):
-        return self.done
-    def reward(self):
-        return self.total_reward
 
     def voxels_state_array(self):
         return np.asarray(self.voxels_state)
@@ -130,51 +122,53 @@ class UAVScanningEnv(object):
         return self.visited_vp
 
     def action(self, vpIdx):
-        # distance of next vp to current vp
-        nextVp = self._viewpoint(vpIdx)
+        # penatly of traveling from current vp to next vp
+        nextVp = self.viewpoints[vpIdx]
         dist = self._distance(nextVp, self.current_vp)
-        penalty = -dist*0.01
-
-        reward = penalty
+        td_penalty = -dist*0.01
+        # reward of new voxel coverage
         voxels_count = len(self.allvoxels)
         newVoxel = self._move2next_and_update(vpIdx, nextVp)
-        reward+=100.0*float(newVoxel)/float(voxels_count)
-        if self._coverage() == 1.0: # finished
-            self.done = True
-            # extra reward for less visited vps
-            reward+=0.1*float(len(self.unvisited_vp))
-        self.total_reward = self.total_reward + reward
-        #print("delta voxel", newVoxel, 100.0*float(newVoxel)/len(self.allvoxels), "penalty", penalty, "reward", reward)
-        return self.done, reward
+        nv_reward = 100.0*float(newVoxel)/float(voxels_count)
+        # done reward
+        done, fn_reward = False, 0.0
+        if self._coverage() == 1.0:
+            fn_reward = 0.1*len(self.unvisited_vp)
+            #print(len(self.unvisited_vp), fn_reward)
+            done = True
+        # step reward
+        reward = td_penalty + nv_reward + fn_reward
+        #print("td_penalty",td_penalty,"nv_reward",nv_reward,"fn_reward",fn_reward,"step reward",reward)
+        return done, reward
 
     def _move2next_and_update(self, vpIdx, nextVp):
         self.current_vp = nextVp
-        # update observed view voxels
-        viewVoxels = nextVp.view_voxels()
-        newVoxel = 0
-        for v in viewVoxels:
-            if v not in self.obs_voxels:
-                self.obs_voxels.append(v)
-                newVoxel+=1
-
-            vIndex = self.allvoxels.index(v)
-            self.voxels_state[vIndex] = 1
-
         # update viewpoint state
         self.viewpoints_state[vpIdx] = 1
-
-        self.visited_vp.append(vpIdx)
+        # update visited and unvisied viewpoints
+        if vpIdx not in self.visited_vp:
+            self.visited_vp.append(vpIdx)
         if vpIdx in self.unvisited_vp:
             self.unvisited_vp.remove(vpIdx)
 
+        # update observed view voxels
+        newVoxel = 0
+        viewVoxels = nextVp.view_voxels()
+        for v in viewVoxels:
+            # update voxels_state
+            vIndex = self.allvoxels.index(v)
+            self.voxels_state[vIndex] = 1
+            # update observed voxels
+            if v not in self.obs_voxels:
+                self.obs_voxels.append(v)
+                newVoxel+=1
         return newVoxel
 
-    def _viewpoint(self,idx):
-        return self.viewpoints[idx]
     def _coverage(self):
         obsV = len(self.obs_voxels)
         allV = len(self.allvoxels)
         return float(obsV)/float(allV)
+
     def _distance(self, vp1, vp2):
         x1 = vp1.quadrotor_pose.position.x;
         y1 = vp1.quadrotor_pose.position.y;
@@ -192,13 +186,14 @@ if __name__ == '__main__':
 
     start = ViewPoint(0,0,0,0,0,0,0,1,0)
     env.reset(start)
-    while env.completed() == False:
-        step = len(env.visited())
-        vps = env.unvisited()
+    done, rewards = False, []
+    while not done:
+        vps = env.unvisited_viewpoints()
         if len(vps) == 0:
+            done = True
             break
-        index = np.random.random_integers(len(vps)-1)
-        vpIndex = vps[index]
-        done, reward = env.action(vpIndex)
-        print("step: ", step, " vp: ", vpIndex, " done: ", done, " reward: ", reward, " total reward: ", env.reward(), " remaining: ", len(vps))
-    env.save_visited("/home/yufeng/Temp/visitedvps.txt")
+        index = np.random.randint(len(vps))
+        done, reward = env.action(vps[index])
+        rewards.append(reward)
+    print("total reward", sum(rewards)," visited", len(env.visited_viewpoints()),"/",env.viewpoints_count())
+    # env.save_visited("/home/yufeng/Temp/visitedvps.txt")

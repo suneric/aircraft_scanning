@@ -71,7 +71,7 @@ if __name__ == "__main__":
     start_vp = ViewPoint(0,-30,5,0,0,0,0,1,0)
     step = 0;
     ep = 1;
-    while ep <= 5000:
+    while ep <= 10000:
         env.reset(start_vp)
         voxels_state = env.voxels_state_array()
         vps_state = env.viewpoints_state_array()
@@ -83,6 +83,7 @@ if __name__ == "__main__":
             # state and action cache for training
             vp_idx = agent.epsilon_greedy(voxels_state, vps_state)
             done, reward = env.action(vp_idx)
+            rewards.append(reward) # record total reward
             next_voxels_state = env.voxels_state_array()
             next_vps_state = env.viewpoints_state_array()
             agent.replay_memory.store((voxels_state,vp_idx,reward,done,next_voxels_state,next_vps_state))
@@ -95,16 +96,15 @@ if __name__ == "__main__":
             step += 1
             vp_count += 1
 
-            # record total reward
-            rewards.append(reward)
-
             # update q-stable net
             if not step%20000:
                 agent.qnet_stable.set_weights(agent.qnet_active.get_weights())
                 print("stable network is updated.")
 
-        print("Epsiode:",ep,"Total Reward:",sum(rewards), "viewpoint count:", len(env.visited_viewpoints()),"/",action_dim)
-        tf.summary.scalar("reward", sum(rewards), step=ep)
+        visited_vps = env.visited_viewpoints()
+        print("epsiode:",ep,"total reward:",sum(rewards), "viewpoint count:", len(visited_vps),"/",action_dim)
+        tf.summary.scalar("total reward", sum(rewards), step=ep)
+        tf.summary.scalar("viewpoint count", len(visited_vps), step=ep)
         if not ep%1000: # save trajectory every 1000 episodes
             create_trajectory(env, agent, output_dir, ep)
         ep+=1

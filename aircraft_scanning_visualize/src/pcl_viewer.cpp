@@ -181,3 +181,11 @@ void PCLViewer::AddText(const std::string& text, const std::string& id, int vp)
   else
     m_viewer->addText(text,50,50,30,0.0,0.0,0.0,id,vp);
 }
+
+void PCLViewer::AddLine(const WSPoint& startPt, const WSPoint& endPt, int idx, double r,double g, double b, int vp)
+{
+  std::string id("line_");
+  id.append(std::to_string(idx));
+  m_viewer->addLine(startPt,endPt,r,g,b,id,vp);
+  m_viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_LINE_WIDTH, 2, id);
+}
