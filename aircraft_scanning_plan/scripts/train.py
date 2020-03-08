@@ -35,13 +35,15 @@ def create_trajectory(env, agent, dir, index):
     vps_state = env.viewpoints_state_array()
     vp_count = 0
     action_dim = len(vps_state)
-    done, rewards = False, []
+    done = False
     while (vp_count < action_dim) and done == False:
-        vp_idx = agent.epsilon_greedy(voxels_state, vps_state)
+        state = np.concatenate((voxels_state, vps_state))
+        digits = self.qnet_active(state.reshape(1,-1))
+        actions = digits.numpy().flatten()
+        vp_idx = np.argmax(actions)
         done, reward = env.action(vp_idx)
         voxels_state = env.viewpoints_state_array()
         vps_state = env.voxels_state_array()
-        rewards.append(reward)
         vp_count += 1
 
     file = "trajecoty_"+str(index)+".txt"
@@ -57,12 +59,12 @@ if __name__ == "__main__":
 
     state_dim = env.voxels_count();
     action_dim = env.viewpoints_count();
-    layer_sizes = [64,64,64] # [512,512]
+    layer_sizes = [512,512] # [512,512]
     learning_rate = args.lr
     mem_cap = 100000
     batch_size = args.bs
     discount_rate = 0.99
-    decay_rate = 0.9999
+    decay_rate = 0.9995
     agent_params = create_agent_params("active",state_dim,action_dim,layer_sizes,learning_rate, mem_cap)
     agent = DQNAgent(agent_params)
 
@@ -94,7 +96,7 @@ if __name__ == "__main__":
             rewards.append(reward) # record total reward
             next_voxels_state = env.voxels_state_array()
             next_vps_state = env.viewpoints_state_array()
-            agent.replay_memory.store((voxels_state,vp_idx,reward,done,next_voxels_state,next_vps_state))
+            agent.replay_memory.store((voxels_state,vps_state,vp_idx,reward,done,next_voxels_state,next_vps_state))
 
             agent.train(batch_size,discount_rate)
 

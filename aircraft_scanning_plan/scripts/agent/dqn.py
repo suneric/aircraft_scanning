@@ -47,7 +47,7 @@ class DQNAgent:
     def train(self, batch_size, gamma):
         # data: (state, action, reward, next state) patch
         minibatch = self.replay_memory.sample_batch(batch_size)
-        (b_states,b_actions,b_rewards,b_doneflags,b_nextstates,b_vpstates) = [np.array(minibatch[i]) for i in range(len(minibatch))]
+        (b_states,b_vpstates,b_actions,b_rewards,b_doneflags,b_nextstates,b_nextvpstates) = [np.array(minibatch[i]) for i in range(len(minibatch))]
 
         # GradientTape for automatic differentiation-computing the gradient of a compuation with respect
         # to its input and intermediate variables
@@ -56,11 +56,13 @@ class DQNAgent:
         # to compute the gradients of a recorded computation using reverse mode differentiation
         with tf.GradientTape() as tape:
             # run forward pass
-            logits_a = self.qnet_active(b_states)
+            states = np.concatenate((b_states,b_vpstates), axis=1)
+            logits_a = self.qnet_active(states)
             pred_q = tf.math.reduce_sum(tf.cast(logits_a,tf.float32)*tf.one_hot(b_actions,self.action_dim), axis=-1)
 
             # use stable network to stablize the q
-            logits_s = self.qnet_stable(b_nextstates)
+            next_states = np.concatenate((b_nextstates,b_nextvpstates), axis=1)
+            logits_s = self.qnet_stable(next_states)
             target_q = b_rewards + (1.-b_doneflags)*gamma*tf.math.reduce_max(logits_s, axis=-1)
 
             # aim to convergent two networks
@@ -86,21 +88,23 @@ class DQNAgent:
     # choose next viewpoint (action) based on voxels state (oservation)
     def epsilon_greedy(self,voxels_state,vps_state):
         # select the action with possibility in unvisited viewpoints
-        unvisited_vp_indices = np.where(vps_state==0)[0]
-        visited_vp_indices = np.nonzero(vps_state)[0]
+        # unvisited_vp_indices = np.where(vps_state==0)[0]
+        # visited_vp_indices = np.nonzero(vps_state)[0]
         #print(vps_state, unvisited_vp_indices, visited_vp_indices)
+        state = np.concatenate((voxels_state,vps_state))
         vp_idx = 0
         if np.random.rand() > self.epsilon:
             # low epsilon means more randomly choose the action
-            digits = self.qnet_active(voxels_state.reshape(1,-1))
+            digits = self.qnet_active(state.reshape(1,-1))
             actions = digits.numpy().flatten()
-            for vvi in visited_vp_indices:
-                actions[vvi] = 0.0
+            # for vvi in visited_vp_indices:
+            #     actions[vvi] = 0.0
             vp_idx = np.argmax(actions) # most possible actions in unvisited vps
         else:
-            if len(unvisited_vp_indices) > 0:
-                uvi = np.random.randint(len(unvisited_vp_indices))
-                vp_idx = unvisited_vp_indices[uvi]
+            vp_idx = np.random.randint(len(vps_state))
+            # if len(unvisited_vp_indices) > 0:
+            #     uvi = np.random.randint(len(unvisited_vp_indices))
+            #     vp_idx = unvisited_vp_indices[uvi]
         return vp_idx
 
     # build multi-layer perceptron nueral network
@@ -108,7 +112,7 @@ class DQNAgent:
         # way 1:  define a Sequential model
         model = tf.keras.Sequential()
         # add a densely-connected layer with layer_sizes[0] units with input
-        model.add(Dense(layer_sizes[0], activation='relu', input_shape=(state_dim,)))
+        model.add(Dense(layer_sizes[0], activation='relu', input_shape=(state_dim+action_dim,)))
         # add other layers
         for i in range(1,len(layer_sizes)):
             model.add(Dense(layer_sizes[i], activation='relu'))
