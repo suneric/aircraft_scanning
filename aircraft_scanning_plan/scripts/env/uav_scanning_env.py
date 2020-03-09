@@ -124,8 +124,8 @@ class UAVScanningEnv(object):
     def action(self, vpIdx):
         # penatly of traveling from current vp to next vp
         nextVp = self.viewpoints[vpIdx]
-        # dist = self._distance(nextVp, self.current_vp)
-        td_penalty = 0.0 #-dist*0.01
+        dist = self._distance(nextVp, self.current_vp)
+        td_penalty = -dist*0.01
         # reward of new voxel coverage
         voxels_count = len(self.allvoxels)
         newVoxel = self._move2next_and_update(vpIdx, nextVp)

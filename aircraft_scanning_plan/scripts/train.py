@@ -38,7 +38,7 @@ def create_trajectory(env, agent, dir, index):
     done = False
     while (vp_count < action_dim) and done == False:
         state = np.concatenate((voxels_state, vps_state))
-        digits = self.qnet_active(state.reshape(1,-1))
+        digits = agent.qnet_active(state.reshape(1,-1))
         actions = digits.numpy().flatten()
         vp_idx = np.argmax(actions)
         done, reward = env.action(vp_idx)
