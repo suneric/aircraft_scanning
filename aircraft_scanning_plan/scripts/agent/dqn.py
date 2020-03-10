@@ -88,23 +88,17 @@ class DQNAgent:
     # choose next viewpoint (action) based on voxels state (oservation)
     def epsilon_greedy(self,voxels_state,vps_state):
         # select the action with possibility in unvisited viewpoints
-        # unvisited_vp_indices = np.where(vps_state==0)[0]
-        # visited_vp_indices = np.nonzero(vps_state)[0]
-        #print(vps_state, unvisited_vp_indices, visited_vp_indices)
         state = np.concatenate((voxels_state,vps_state))
+        #print("state",state)
         vp_idx = 0
         if np.random.rand() > self.epsilon:
             # low epsilon means more randomly choose the action
             digits = self.qnet_active(state.reshape(1,-1))
             actions = digits.numpy().flatten()
-            # for vvi in visited_vp_indices:
-            #     actions[vvi] = 0.0
-            vp_idx = np.argmax(actions) # most possible actions in unvisited vps
+            vp_idx = np.argmax(actions) # most possible actions
         else:
             vp_idx = np.random.randint(len(vps_state))
-            # if len(unvisited_vp_indices) > 0:
-            #     uvi = np.random.randint(len(unvisited_vp_indices))
-            #     vp_idx = unvisited_vp_indices[uvi]
+        #print("next vp",vp_idx)
         return vp_idx
 
     # build multi-layer perceptron nueral network

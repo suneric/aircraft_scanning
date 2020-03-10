@@ -100,10 +100,8 @@ class UAVScanningEnv(object):
         self.obs_voxels = []
         self.visited_vp = []
         self.unvisited_vp = [i for i in range(self.viewpoints_count())]
-        #print(self.unvisited_vp)
-        # voxels state are not visited
+
         self.voxels_state = [0]*len(self.allvoxels)
-        # viewpoints state are not visited
         self.viewpoints_state = [0]*len(self.viewpoints)
 
     def voxels_state_array(self):
@@ -122,29 +120,21 @@ class UAVScanningEnv(object):
         return self.visited_vp
 
     def action(self, vpIdx):
-        # penatly of traveling from current vp to next vp
-        nextVp = self.viewpoints[vpIdx]
-        dist = self._distance(nextVp, self.current_vp)
-        td_penalty = -dist*0.01
-        # reward of new voxel coverage
-        voxels_count = len(self.allvoxels)
-        newVoxel = self._move2next_and_update(vpIdx, nextVp)
-        nv_reward = 100.0*float(newVoxel)/float(voxels_count)
-        # done reward
-        done, fn_reward = False, 0.0
-        if self._coverage() == 1.0:
-            fn_reward = 0.1*len(self.unvisited_vp)
-            #print(len(self.unvisited_vp), fn_reward)
-            done = True
-        # step reward
+        nextVp, newVoxel, dist = self._move2next_and_update(vpIdx)
+        #print("next vp delta info",vpIdx, newVoxel,dist,len(self.obs_voxels),len(self.visited_vp))
+        coverage = self._coverage()
+        done = (coverage == 1.0)
+        td_penalty = -(0.1+dist*0.01) # base penalty + distance travel
+        nv_reward = 100*float(newVoxel)/float(self.voxels_count())
+        fn_reward = done*len(self.unvisited_vp)
         reward = td_penalty + nv_reward + fn_reward
-        #print("td_penalty",td_penalty,"nv_reward",nv_reward,"fn_reward",fn_reward,"step reward",reward)
+        #print(done,"td_penalty",td_penalty,"nv_reward",nv_reward,"fn_reward",fn_reward,"step reward",reward)
         return done, reward
 
-    def _move2next_and_update(self, vpIdx, nextVp):
-        self.current_vp = nextVp
+    def _move2next_and_update(self, vpIdx):
         # update viewpoint state
         self.viewpoints_state[vpIdx] = 1
+        nextVp = self.viewpoints[vpIdx]
         # update visited and unvisied viewpoints
         if vpIdx not in self.visited_vp:
             self.visited_vp.append(vpIdx)
@@ -162,7 +152,10 @@ class UAVScanningEnv(object):
             if v not in self.obs_voxels:
                 self.obs_voxels.append(v)
                 newVoxel+=1
-        return newVoxel
+
+        dist = self._distance(nextVp, self.current_vp)
+        self.current_vp = nextVp
+        return nextVp, newVoxel, dist
 
     def _coverage(self):
         obsV = len(self.obs_voxels)
