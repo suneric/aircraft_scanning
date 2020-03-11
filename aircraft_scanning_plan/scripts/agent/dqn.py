@@ -28,7 +28,7 @@ class Memory:
         return zip(*batch)
 
 class DQNAgent:
-    def __init__(self, params):
+    def __init__(self, params, env):
         self.name = params['name']
         self.state_dim = params['state_dim']
         self.action_dim = params['action_dim']
@@ -44,10 +44,12 @@ class DQNAgent:
         self.loss_fn = tf.keras.losses.MeanSquaredError()
         self.mse_metric = tf.keras.metrics.MeanSquaredError()
 
+        self.env = env
+
     def train(self, batch_size, gamma):
         # data: (state, action, reward, next state) patch
         minibatch = self.replay_memory.sample_batch(batch_size)
-        (b_states,b_vpstates,b_actions,b_rewards,b_doneflags,b_nextstates,b_nextvpstates) = [np.array(minibatch[i]) for i in range(len(minibatch))]
+        (b_states,b_vpstates,b_actions,b_neighbors,b_rewards,b_doneflags,b_nextstates,b_nextvpstates,b_nextneighbors) = [np.array(minibatch[i]) for i in range(len(minibatch))]
 
         # GradientTape for automatic differentiation-computing the gradient of a compuation with respect
         # to its input and intermediate variables
@@ -59,14 +61,15 @@ class DQNAgent:
             states = np.concatenate((b_states,b_vpstates), axis=1)
             logits_a = self.qnet_active(states)
             pred_q = tf.math.reduce_sum(tf.cast(logits_a,tf.float32)*tf.one_hot(b_actions,self.action_dim), axis=-1)
-
+            #print("predict_q",pred_q)
             # use stable network to stablize the q
             next_states = np.concatenate((b_nextstates,b_nextvpstates), axis=1)
             logits_s = self.qnet_stable(next_states)
-            target_q = b_rewards + (1.-b_doneflags)*gamma*tf.math.reduce_max(logits_s, axis=-1)
-
+            target_q = b_rewards + (1.-b_doneflags)*gamma*tf.math.reduce_max(logits_s*b_nextneighbors, axis=-1)
+            #print("target_q",target_q)
             # aim to convergent two networks
             loss_value = self.loss_fn(y_true=target_q, y_pred=pred_q)
+            #print("loss",loss_value)
 
         # retrieve the gradients of trainable variables with respect to the loss
         grads = tape.gradient(loss_value, self.qnet_active.trainable_weights)
@@ -86,19 +89,20 @@ class DQNAgent:
         return self.epsilon
 
     # choose next viewpoint (action) based on voxels state (oservation)
-    def epsilon_greedy(self,voxels_state,vps_state):
+    def epsilon_greedy(self,voxels_state,vps_state,nb_state):
         # select the action with possibility in unvisited viewpoints
         state = np.concatenate((voxels_state,vps_state))
-        #print("state",state)
         vp_idx = 0
         if np.random.rand() > self.epsilon:
             # low epsilon means more randomly choose the action
             digits = self.qnet_active(state.reshape(1,-1))
-            actions = digits.numpy().flatten()
+            actions = digits.numpy()*nb_state
+            #print(digits,actions)
             vp_idx = np.argmax(actions) # most possible actions
         else:
-            vp_idx = np.random.randint(len(vps_state))
-        #print("next vp",vp_idx)
+            actions = np.asarray(np.nonzero(nb_state)).flatten()
+            idx = np.random.randint(len(actions))
+            vp_idx = actions[idx]
         return vp_idx
 
     # build multi-layer perceptron nueral network

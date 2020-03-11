@@ -66,7 +66,7 @@ if __name__ == "__main__":
     discount_rate = 0.99
     decay_rate = 0.9995
     agent_params = create_agent_params("active",state_dim,action_dim,layer_sizes,learning_rate, mem_cap)
-    agent = DQNAgent(agent_params)
+    agent = DQNAgent(agent_params, env)
 
     date_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
     output_dir = os.path.join(os.path.dirname(sys.path[0]+"/saved_models/dqn/"),date_time)
@@ -82,27 +82,30 @@ if __name__ == "__main__":
     step = 0
     ep = 1
     completed = 0
+    neighbor_count = 8
     while ep <= args.ep:
         env.reset(start_vp)
         voxels_state = env.voxels_state_array()
         vps_state = env.viewpoints_state_array()
+        nb_state = env.nearest_state(start_vp,neighbor_count)
         epsilon = agent.decay_epsilon(ep,decay_rate,1.0,0.1,1)
-
         done, rewards = False, []
         vp_count = 0
         while (vp_count < action_dim) and done == False:
             # state and action cache for training
-            vp_idx = agent.epsilon_greedy(voxels_state, vps_state)
+            vp_idx = agent.epsilon_greedy(voxels_state, vps_state, nb_state)
             done, reward = env.action(vp_idx)
             #print("train step", vp_idx,done,reward,vp_count,action_dim)
             rewards.append(reward) # record total reward
             next_voxels_state = env.voxels_state_array()
             next_vps_state = env.viewpoints_state_array()
-            agent.replay_memory.store((voxels_state,vps_state,vp_idx,reward,done,next_voxels_state,next_vps_state))
+            next_nb_state = env.neighbor_state(vp_idx,neighbor_count)
+            agent.replay_memory.store((voxels_state,vps_state,vp_idx,nb_state,reward,done,next_voxels_state,next_vps_state,next_nb_state))
             agent.train(batch_size,discount_rate)
             # update states
             voxels_state = next_voxels_state
             vps_state = next_vps_state
+            nb_state = next_nb_state
             step += 1
             vp_count += 1
             # update q-stable net
