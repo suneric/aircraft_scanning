@@ -198,8 +198,8 @@ class UAVScanningEnv(object):
         #print("next vp delta info",vpIdx, newVoxel,dist,len(self.obs_voxels),len(self.visited_vp))
         coverage = self._coverage()
         done = (coverage == 1.0)
-        td_penalty = 0.0 #-dist*0.01 # base penalty + distance travel
-        nv_reward = float(newVoxel)/float(self.voxels_count())
+        td_penalty = (1.0-dist*0.01)/len(self.viewpoints) # base penalty + distance travel
+        nv_reward = 0.0 #float(newVoxel)/float(self.voxels_count())
         fn_reward = done*len(self.unvisited_vp)
         reward = td_penalty + nv_reward + fn_reward
         #print(done,"td_penalty",td_penalty,"nv_reward",nv_reward,"fn_reward",fn_reward,"step reward",reward)
