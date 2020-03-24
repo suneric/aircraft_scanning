@@ -5,6 +5,7 @@
 #include <pcl/octree/octree_search.h>
 
 typedef pcl::octree::OctreePointCloudSearch<WSPoint> OctreeSearch;
+typedef std::pair<Eigen::Vector3f, std::vector<Eigen::Vector3f> > VoxelNormals;
 
 namespace asv3d {
 
@@ -145,6 +146,9 @@ namespace asv3d {
     int TreeDepth() const {return m_os->getTreeDepth();}
     double Resolution() const {return m_os->getResolution();}
 
+    void FindOutsidePolygons(std::vector<WSPointCloudPtr>& outsidePolygons) const;
+    void VoxelOutsideCenters(std::vector<VoxelNormals>& outsideNormals) const;
+
     // voxel
     WSPoint VoxelCentroid(int index) const;
     double VoxelSideLength() const;
@@ -166,6 +170,7 @@ namespace asv3d {
 
   private:
     bool EvaluateVoxelNormal(const WSPointCloudPtr cloud, const WSPoint& point, WSNormal& normal) const;
+    int  IntersectedOccupiedVoxels(const Eigen::Vector3f& origin, const Eigen::Vector3f& end) const;
 
   private:
     OctreeSearch* m_os;

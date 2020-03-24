@@ -5,6 +5,7 @@
 #include <pcl/octree/octree_pointcloud_voxelcentroid.h>
 #include <pcl/octree/octree_impl.h>
 #include <pcl/features/normal_3d.h>
+#include <pcl/geometry/planar_polygon.h>
 
 using namespace asv3d;
 
@@ -183,6 +184,215 @@ int PCLOctree::BoxSearch(const Eigen::Vector3f& minPt,
               std::vector<int> indices) const
 {
   return m_os->boxSearch(minPt, maxPt, indices);
+}
+
+namespace
+{
+  WSPointCloudPtr Polygon_X(const Eigen::Vector3f& center, double halfVLen, double flag)
+  {
+    WSPointCloudPtr polygon(new WSPointCloud);
+    double xoffset = flag*halfVLen;
+    polygon->points.resize(5);
+    polygon->points[0].x = center.x()+xoffset;
+    polygon->points[0].y = center.y()-halfVLen;
+    polygon->points[0].z = center.z()-halfVLen;
+
+    polygon->points[1].x = center.x()+xoffset;
+    polygon->points[1].y = center.y()-halfVLen;
+    polygon->points[1].z = center.z()+halfVLen;
+
+    polygon->points[2].x = center.x()+xoffset;
+    polygon->points[2].y = center.y()+halfVLen;
+    polygon->points[2].z = center.z()+halfVLen;
+
+    polygon->points[3].x = center.x()+xoffset;
+    polygon->points[3].y = center.y()+halfVLen;
+    polygon->points[3].z = center.z()-halfVLen;
+
+    polygon->points[4].x = center.x()+xoffset;
+    polygon->points[4].y = center.y()-halfVLen;
+    polygon->points[4].z = center.z()-halfVLen;
+    return polygon;
+  }
+
+  WSPointCloudPtr Polygon_Y(const Eigen::Vector3f& center, double halfVLen, double flag)
+  {
+    WSPointCloudPtr polygon(new WSPointCloud);
+    double yoffset = flag*halfVLen;
+    polygon->points.resize(5);
+    polygon->points[0].x = center.x()-halfVLen;
+    polygon->points[0].y = center.y()+yoffset;
+    polygon->points[0].z = center.z()-halfVLen;
+
+    polygon->points[1].x = center.x()-halfVLen;
+    polygon->points[1].y = center.y()+yoffset;
+    polygon->points[1].z = center.z()+halfVLen;
+
+    polygon->points[2].x = center.x()+halfVLen;
+    polygon->points[2].y = center.y()+yoffset;
+    polygon->points[2].z = center.z()+halfVLen;
+
+    polygon->points[3].x = center.x()+halfVLen;
+    polygon->points[3].y = center.y()+yoffset;
+    polygon->points[3].z = center.z()-halfVLen;
+
+    polygon->points[4].x = center.x()-halfVLen;
+    polygon->points[4].y = center.y()+yoffset;
+    polygon->points[4].z = center.z()-halfVLen;
+    return polygon;
+  }
+
+  WSPointCloudPtr Polygon_Z(const Eigen::Vector3f& center, double halfVLen, double flag)
+  {
+    WSPointCloudPtr polygon(new WSPointCloud);
+    double zoffset = flag*halfVLen;
+    polygon->points.resize(5);
+    polygon->points[0].x = center.x()-halfVLen;
+    polygon->points[0].y = center.y()-halfVLen;
+    polygon->points[0].z = center.z()+zoffset;
+
+    polygon->points[1].x = center.x()-halfVLen;
+    polygon->points[1].y = center.y()+halfVLen;
+    polygon->points[1].z = center.z()+zoffset;
+
+    polygon->points[2].x = center.x()+halfVLen;
+    polygon->points[2].y = center.y()+halfVLen;
+    polygon->points[2].z = center.z()+zoffset;
+
+    polygon->points[3].x = center.x()+halfVLen;
+    polygon->points[3].y = center.y()-halfVLen;
+    polygon->points[3].z = center.z()+zoffset;
+
+    polygon->points[4].x = center.x()-halfVLen;
+    polygon->points[4].y = center.y()-halfVLen;
+    polygon->points[4].z = center.z()+zoffset;
+    return polygon;
+  }
+
+};
+
+void PCLOctree::FindOutsidePolygons(std::vector<WSPointCloudPtr>& outsidePolygons) const
+{
+  int nInterSectVoxel = 0;
+  double halfVLen = 0.5*m_os->getVoxelSquaredSideLen();
+  for (int i = 0; i < m_centroidCloud->points.size(); ++i)
+  {
+    WSPoint c = m_centroidCloud->points[i];
+    Eigen::Vector3f center(c.x,c.y,c.z);
+
+    // x direction
+    Eigen::Vector3f xE1(c.x-2*halfVLen,c.y,c.z);
+    nInterSectVoxel = IntersectedOccupiedVoxels(center,xE1);
+    if (nInterSectVoxel == 1)
+    {
+      WSPointCloudPtr polygon = Polygon_X(center,halfVLen,-1.0);
+      outsidePolygons.push_back(polygon);
+    }
+
+    Eigen::Vector3f xE2(c.x+2*halfVLen,c.y,c.z);
+    nInterSectVoxel = IntersectedOccupiedVoxels(center,xE2);
+    if (nInterSectVoxel == 1)
+    {
+      WSPointCloudPtr polygon = Polygon_X(center,halfVLen,1.0);
+      outsidePolygons.push_back(polygon);
+    }
+
+    // y direction
+    Eigen::Vector3f yE1(c.x,c.y-2*halfVLen,c.z);
+    nInterSectVoxel = IntersectedOccupiedVoxels(center,yE1);
+    if (nInterSectVoxel == 1)
+    {
+      WSPointCloudPtr polygon = Polygon_Y(center,halfVLen,-1.0);
+      outsidePolygons.push_back(polygon);
+    }
+
+    Eigen::Vector3f yE2(c.x,c.y+2*halfVLen,c.z);
+    nInterSectVoxel = IntersectedOccupiedVoxels(center,yE2);
+    if (nInterSectVoxel == 1)
+    {
+      WSPointCloudPtr polygon = Polygon_Y(center,halfVLen,1.0);
+      outsidePolygons.push_back(polygon);
+    }
+
+    // z direction
+    Eigen::Vector3f zE1(c.x,c.y,c.z-2*halfVLen);
+    nInterSectVoxel = IntersectedOccupiedVoxels(center,zE1);
+    if (nInterSectVoxel == 1)
+    {
+      WSPointCloudPtr polygon = Polygon_Z(center,halfVLen,-1.0);
+      outsidePolygons.push_back(polygon);
+    }
+
+    Eigen::Vector3f zE2(c.x,c.y,c.z+2*halfVLen);
+    nInterSectVoxel = IntersectedOccupiedVoxels(center,zE2);
+    if (nInterSectVoxel == 1)
+    {
+      WSPointCloudPtr polygon = Polygon_Z(center,halfVLen,1.0);
+      outsidePolygons.push_back(polygon);
+    }
+  }
+}
+
+int PCLOctree::IntersectedOccupiedVoxels(const Eigen::Vector3f& origin, const Eigen::Vector3f& end) const
+{
+  pcl::octree::OctreePointCloud<WSPoint>::AlignedPointTVector tmpCentroids;
+  int nInterSectVoxel = m_os->getApproxIntersectedVoxelCentersBySegment(origin,end,tmpCentroids);
+  int count = 0;
+  for (size_t j = 0; j < tmpCentroids.size(); ++j)
+  {
+    bool bOccupied = m_os->isVoxelOccupiedAtPoint(tmpCentroids[j]);
+    if (bOccupied)
+      count++;
+  }
+  //std::cout << "intersected:" << tmpCentroids.size() << "occupied" << count << std::endl;
+  return count;
+}
+
+void PCLOctree::VoxelOutsideCenters(std::vector<VoxelNormals>& outsideNormals) const
+{
+  int nInterSectVoxel = 0;
+  double halfVLen = 0.5*m_os->getVoxelSquaredSideLen();
+  for (int i = 0; i < m_centroidCloud->points.size(); ++i)
+  {
+    WSPoint c = m_centroidCloud->points[i];
+    Eigen::Vector3f center(c.x,c.y,c.z);
+    std::vector<Eigen::Vector3f> outsideCenters;
+
+    // x direction
+    Eigen::Vector3f xE1(c.x-2*halfVLen,c.y,c.z);
+    nInterSectVoxel = IntersectedOccupiedVoxels(center,xE1);
+    if (nInterSectVoxel == 1)
+      outsideCenters.push_back(Eigen::Vector3f(c.x-halfVLen,c.y,c.z));
+
+    Eigen::Vector3f xE2(c.x+2*halfVLen,c.y,c.z);
+    nInterSectVoxel = IntersectedOccupiedVoxels(center,xE2);
+    if (nInterSectVoxel == 1)
+      outsideCenters.push_back(Eigen::Vector3f(c.x+halfVLen,c.y,c.z));
+
+    // y direction
+    Eigen::Vector3f yE1(c.x,c.y-2*halfVLen,c.z);
+    nInterSectVoxel = IntersectedOccupiedVoxels(center,yE1);
+    if (nInterSectVoxel == 1)
+      outsideCenters.push_back(Eigen::Vector3f(c.x,c.y-halfVLen,c.z));
+
+    Eigen::Vector3f yE2(c.x,c.y+2*halfVLen,c.z);
+    nInterSectVoxel = IntersectedOccupiedVoxels(center,yE2);
+    if (nInterSectVoxel == 1)
+      outsideCenters.push_back(Eigen::Vector3f(c.x,c.y+halfVLen,c.z));
+
+    // z direction
+    Eigen::Vector3f zE1(c.x,c.y,c.z-2*halfVLen);
+    nInterSectVoxel = IntersectedOccupiedVoxels(center,zE1);
+    if (nInterSectVoxel == 1)
+      outsideCenters.push_back(Eigen::Vector3f(c.x,c.y,c.z-halfVLen));
+
+    Eigen::Vector3f zE2(c.x,c.y,c.z+2*halfVLen);
+    nInterSectVoxel = IntersectedOccupiedVoxels(center,zE2);
+    if (nInterSectVoxel == 1)
+      outsideCenters.push_back(Eigen::Vector3f(c.x,c.y,c.z+halfVLen));
+
+    outsideNormals.push_back(std::make_pair(center, outsideCenters));
+  }
 }
 
 // void CreateViewpointsWithAverageNormal(const WSPointCloudPtr cloud, OctreeSearch os, double distance, std::vector<Eigen::Affine3f>& cameras)

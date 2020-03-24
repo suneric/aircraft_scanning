@@ -18,6 +18,7 @@ def get_args():
     parser.add_argument('--ep', type=int, default=10000)
     parser.add_argument('--lr', type=float, default=0.001)
     parser.add_argument('--bs', type=int, default=2048)
+    parser.add_argument('--ad', type=int, default=8)
     return parser.parse_args()
 
 def create_agent_params(name, state_dim, action_dim, layer_sizes, learning_rate, mem_cap):
@@ -31,40 +32,32 @@ def create_agent_params(name, state_dim, action_dim, layer_sizes, learning_rate,
     return params
 
 def create_trajectory(env, agent, dir, index):
-    voxels_state = env.voxels_state_array()
-    vps_state = env.viewpoints_state_array()
-    vp_count = 0
-    action_dim = len(vps_state)
     done = False
-    while (vp_count < action_dim) and done == False:
-        state = np.concatenate((voxels_state, vps_state))
+    state = env.concatenate_state()
+    while done == False:
         digits = agent.qnet_active(state.reshape(1,-1))
-        actions = digits.numpy().flatten()
-        vp_idx = np.argmax(actions)
-        done, reward = env.action(vp_idx)
-        voxels_state = env.viewpoints_state_array()
-        vps_state = env.voxels_state_array()
-        vp_count += 1
-
+        action = np.argmax(digits.numpy().flatten())
+        done, reward, coverage = env.action(action)
+        state = env.concatenate_state()
     file = "trajecoty_"+str(index)+".txt"
-    env.save_visited(os.path.join(dir,file))
+    env.save(os.path.join(dir,file))
     print("save trajectory to ", os.path.join(dir,file))
 
 if __name__ == "__main__":
     args = get_args()
-    print("episode:",args.ep,"learning rate:",args.lr,"batcg size:",args.bs)
-    env = UAVScanningEnv()
+    print("episode:",args.ep,"learning rate:",args.lr,"batcg size:",args.bs,"action dimenension:", args.ad)
+    env = UAVScanningEnv(args.ad)
     viewpoints = os.path.join(os.path.dirname(sys.path[0]+"/viewpoint/"),"viewpoints.txt")
     env.load(viewpoints)
 
-    state_dim = env.voxels_count();
-    action_dim = env.viewpoints_count();
-    layer_sizes = [512,512] # [512,512]
+    state_dim = env.state_dimension();
+    action_dim = args.ad;
+    layer_sizes = [64,64] # [512,512]
     learning_rate = args.lr
     mem_cap = 100000
     batch_size = args.bs
-    discount_rate = 0.99
-    decay_rate = 0.9995
+    discount_rate = 0.98
+    decay_rate = 0.9998
     agent_params = create_agent_params("active",state_dim,action_dim,layer_sizes,learning_rate, mem_cap)
     agent = DQNAgent(agent_params, env)
 
@@ -78,48 +71,36 @@ if __name__ == "__main__":
     start_time = time.time()
 
     # learning
-    start_vp = ViewPoint(0,-30,5,0,0,0,0,1,0)
     step = 0
     ep = 1
-    completed = 0
-    neighbor_count = 8
+    start_vp = ViewPoint(0,-30,5,0,0,0,0,1,0)
     while ep <= args.ep:
         env.reset(start_vp)
-        voxels_state = env.voxels_state_array()
-        vps_state = env.viewpoints_state_array()
-        nb_state = env.nearest_state(start_vp,neighbor_count)
+        state = env.concatenate_state()
         epsilon = agent.decay_epsilon(ep,decay_rate,1.0,0.1,1)
-        done, rewards = False, []
-        vp_count = 0
-        while (vp_count < action_dim) and done == False:
-            # state and action cache for training
-            vp_idx = agent.epsilon_greedy(voxels_state, vps_state, nb_state)
-            done, reward = env.action(vp_idx)
-            #print("train step", vp_idx,done,reward,vp_count,action_dim)
-            rewards.append(reward) # record total reward
-            next_voxels_state = env.voxels_state_array()
-            next_vps_state = env.viewpoints_state_array()
-            next_nb_state = env.neighbor_state(vp_idx,neighbor_count)
-            agent.replay_memory.store((voxels_state,vps_state,vp_idx,nb_state,reward,done,next_voxels_state,next_vps_state,next_nb_state))
+        done, rewards, coverage = False, [], 0
+        vp_count = 0;
+        while vp_count < 100 and done == False:
+            action = agent.epsilon_greedy(state,action_dim)
+            done, reward, coverage = env.action(action)
+            rewards.append(reward)
+            next_state = env.concatenate_state()
+            # record state and next state for trainig
+            agent.replay_memory.store((state,action,reward,done,next_state))
             agent.train(batch_size,discount_rate)
-            # update states
-            voxels_state = next_voxels_state
-            vps_state = next_vps_state
-            nb_state = next_nb_state
+
+            state = next_state
             step += 1
             vp_count += 1
             # update q-stable net
             if not step%20000:
                 agent.qnet_stable.set_weights(agent.qnet_active.get_weights())
                 print("stable network is updated.")
-
-        visited_vps = env.visited_viewpoints()
-        if done:
-            completed += 1
-        print("epsiode:",ep,"total reward:",sum(rewards),"visited vps:",len(visited_vps),"/",action_dim,"completed count:",completed)
-
+        visited = env.state_vps(True)
+        unvisited = env.state_vps(False)
+        print("epsiode:",ep,"total reward:",sum(rewards),"visited:",len(visited),"unvisited:",len(unvisited),"coverage:",coverage)
         tf.summary.scalar("total reward", sum(rewards), step=ep)
-        tf.summary.scalar("viewpoint count", len(visited_vps), step=ep)
+        tf.summary.scalar("coverage", coverage, step=ep)
         if not ep%1000: # save trajectory every 1000 episodes
             create_trajectory(env, agent, output_dir, ep)
         ep+=1

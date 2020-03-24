@@ -47,81 +47,66 @@ WSPointCloudPtr PCLViewPoint::CameraViewVoxels(const PCLOctree& tree, const Eige
   return nullptr;
 }
 
-void PCLViewPoint::GenerateCameraPositions(const PCLOctree& tree,double distance,std::vector<Eigen::Affine3f>& cameras, int type)
+void PCLViewPoint::GenerateCameraPositions(const PCLOctree& tree,double distance,std::vector<Eigen::Affine3f>& cameras, std::vector<ViewPoint>& vps, int type)
 {
   if (type == 0)
-    CameraPositionWithVoxelAverageNormal(tree, distance, cameras);
+    CameraPositionWithVoxelAverageNormal(tree, distance, cameras, vps);
   else
-    CameraPositionWithVoxelCube(tree, distance, cameras, type);
+    CameraPositionWithVoxelCube(tree, distance, cameras, vps);
 }
 
-void PCLViewPoint::CameraPositionWithVoxelCube(const PCLOctree& tree, double distance, std::vector<Eigen::Affine3f>& cameras, int type)
+void PCLViewPoint::CameraPositionWithVoxelCube(const PCLOctree& tree, double distance, std::vector<Eigen::Affine3f>& cameras, std::vector<ViewPoint>& vps)
 {
-  WSPointCloudPtr vCloud = tree.VoxelCentroidCloud();
-  double voxelSideLen = tree.VoxelSideLength();
-  for (size_t i = 0; i < vCloud->points.size(); ++i)
+  std::vector<VoxelNormals> voCenters;
+  tree.VoxelOutsideCenters(voCenters);
+  std::cout << "voxel outside " << voCenters.size() << std::endl;
+  double minDist = tree.Resolution();
+  double maxDist = distance;
+  for (int i = 0; i < voCenters.size(); ++i)
   {
-    Eigen::Vector3f center(vCloud->points[i].x, vCloud->points[i].y, vCloud->points[i].z);
-    std::vector<Eigen::Vector3f> points;
-    if (type == 1)
-      VoxelFaceCenters(center, voxelSideLen, points);
-    else if (type == 2)
-      VoxelVertices(center, voxelSideLen, points);
-    else if (type == 3)
-      VoxelEdgeCenters(center, voxelSideLen, points);
-
-    for (size_t j = 0; j < points.size(); ++j)
+    Eigen::Vector3f center = voCenters[i].first;
+    std::vector<Eigen::Vector3f> ops = voCenters[i].second;
+    for (size_t j = 0; j < ops.size(); ++j)
     {
-      Eigen::Vector3f nm = points[j]-center;
-      std::vector<WSPoint> intesects;
-      int nResPositive = tree.GetIntersectedVoxelCenters(center, nm, 2, intesects);
-      if (nResPositive == 1)
+      Eigen::Vector3f nm = ops[j]-center;
+      Eigen::Affine3f camera;
+      ViewPoint vp;
+      if (CameraPosition(tree, center, nm, minDist, maxDist, camera, vp))
       {
-        Eigen::Vector3f camera;
-        if (CameraPosition(center, nm, tree.Resolution(), distance, camera))
-          cameras.push_back(CameraPose(camera,-nm));
+        cameras.push_back(camera);
+        vps.push_back(vp);
+      }
+    }
+
+    // extra normals
+    if (ops.size() > 1)
+    {
+      double nx=0.0,ny=0.0,nz=0.0;
+      int num = ops.size();
+      for (size_t j = 0; j < num; ++j)
+      {
+        Eigen::Vector3f nm = (ops[j]-center).normalized();
+        nx += nm.x();
+        ny += nm.y();
+        nz += nm.z();
+      }
+      nx /= num;
+      ny /= num;
+      nz /= num;
+
+      Eigen::Vector3f anm(nx,ny,nz);
+      Eigen::Affine3f camera;
+      ViewPoint vp;
+      if (CameraPosition(tree, center, anm, minDist, maxDist, camera, vp))
+      {
+        cameras.push_back(camera);
+        vps.push_back(vp);
       }
     }
   }
 }
 
-void PCLViewPoint::VoxelFaceCenters(const Eigen::Vector3f& center, double voxelSideLen, std::vector<Eigen::Vector3f>& points)
-{
-  points.push_back(Eigen::Vector3f(center.x()-0.5*voxelSideLen, center.y(), center.z()));
-  points.push_back(Eigen::Vector3f(center.x()+0.5*voxelSideLen, center.y(), center.z()));
-  points.push_back(Eigen::Vector3f(center.x(), center.y()-0.5*voxelSideLen, center.z()));
-  points.push_back(Eigen::Vector3f(center.x(), center.y()+0.5*voxelSideLen, center.z()));
-  points.push_back(Eigen::Vector3f(center.x(), center.y(), center.z()-0.5*voxelSideLen));
-  points.push_back(Eigen::Vector3f(center.x(), center.y(), center.z()+0.5*voxelSideLen));
-}
-void PCLViewPoint::VoxelVertices(const Eigen::Vector3f& center, double voxelSideLen, std::vector<Eigen::Vector3f>& points)
-{
-  points.push_back(Eigen::Vector3f(center.x()-0.5*voxelSideLen, center.y()-0.5*voxelSideLen, center.z()-0.5*voxelSideLen));
-  points.push_back(Eigen::Vector3f(center.x()-0.5*voxelSideLen, center.y()-0.5*voxelSideLen, center.z()+0.5*voxelSideLen));
-  points.push_back(Eigen::Vector3f(center.x()-0.5*voxelSideLen, center.y()+0.5*voxelSideLen, center.z()-0.5*voxelSideLen));
-  points.push_back(Eigen::Vector3f(center.x()-0.5*voxelSideLen, center.y()+0.5*voxelSideLen, center.z()+0.5*voxelSideLen));
-  points.push_back(Eigen::Vector3f(center.x()+0.5*voxelSideLen, center.y()-0.5*voxelSideLen, center.z()-0.5*voxelSideLen));
-  points.push_back(Eigen::Vector3f(center.x()+0.5*voxelSideLen, center.y()-0.5*voxelSideLen, center.z()+0.5*voxelSideLen));
-  points.push_back(Eigen::Vector3f(center.x()+0.5*voxelSideLen, center.y()+0.5*voxelSideLen, center.z()-0.5*voxelSideLen));
-  points.push_back(Eigen::Vector3f(center.x()+0.5*voxelSideLen, center.y()+0.5*voxelSideLen, center.z()+0.5*voxelSideLen));
-}
-void PCLViewPoint::VoxelEdgeCenters(const Eigen::Vector3f& center, double voxelSideLen, std::vector<Eigen::Vector3f>& points)
-{
-  points.push_back(Eigen::Vector3f(center.x(), center.y()-0.5*voxelSideLen, center.z()-0.5*voxelSideLen));
-  points.push_back(Eigen::Vector3f(center.x(), center.y()-0.5*voxelSideLen, center.z()+0.5*voxelSideLen));
-  points.push_back(Eigen::Vector3f(center.x(), center.y()+0.5*voxelSideLen, center.z()-0.5*voxelSideLen));
-  points.push_back(Eigen::Vector3f(center.x(), center.y()+0.5*voxelSideLen, center.z()+0.5*voxelSideLen));
-  points.push_back(Eigen::Vector3f(center.x()-0.5*voxelSideLen, center.y(), center.z()-0.5*voxelSideLen));
-  points.push_back(Eigen::Vector3f(center.x()+0.5*voxelSideLen, center.y(), center.z()+0.5*voxelSideLen));
-  points.push_back(Eigen::Vector3f(center.x()-0.5*voxelSideLen, center.y(), center.z()-0.5*voxelSideLen));
-  points.push_back(Eigen::Vector3f(center.x()+0.5*voxelSideLen, center.y(), center.z()+0.5*voxelSideLen));
-  points.push_back(Eigen::Vector3f(center.x()-0.5*voxelSideLen, center.y()-0.5*voxelSideLen, center.z()));
-  points.push_back(Eigen::Vector3f(center.x()+0.5*voxelSideLen, center.y()+0.5*voxelSideLen, center.z()));
-  points.push_back(Eigen::Vector3f(center.x()-0.5*voxelSideLen, center.y()-0.5*voxelSideLen, center.z()));
-  points.push_back(Eigen::Vector3f(center.x()+0.5*voxelSideLen, center.y()+0.5*voxelSideLen, center.z()));
-}
-
-void PCLViewPoint::CameraPositionWithVoxelAverageNormal(const PCLOctree& tree, double distance, std::vector<Eigen::Affine3f>& cameras)
+void PCLViewPoint::CameraPositionWithVoxelAverageNormal(const PCLOctree& tree, double distance, std::vector<Eigen::Affine3f>& cameras, std::vector<ViewPoint>& vps)
 {
   WSPointCloudPtr vCloud = tree.VoxelCentroidCloud();
   WSPointCloudNormalPtr vNormal = tree.VoxelAverageNormals();
@@ -130,24 +115,36 @@ void PCLViewPoint::CameraPositionWithVoxelAverageNormal(const PCLOctree& tree, d
   {
     Eigen::Vector3f point(vCloud->points[i].x, vCloud->points[i].y, vCloud->points[i].z);
     Eigen::Vector3f nm(vNormal->points[i].normal_x, vNormal->points[i].normal_y, vNormal->points[i].normal_z);
-    Eigen::Vector3f camera;
-    if (CameraPosition(point, nm, tree.Resolution(), distance, camera))
-      cameras.push_back(CameraPose(camera,-nm));
+    Eigen::Affine3f camera;
+    ViewPoint vp;
+    if (CameraPosition(tree,point, nm, tree.Resolution(), distance, camera,vp))
+    {
+      cameras.push_back(camera);
+      vps.push_back(vp);
+    }
   }
 }
 
-bool PCLViewPoint::CameraPosition(const Eigen::Vector3f& target, const Eigen::Vector3f& normal, double distMin, double distMax, Eigen::Vector3f& camera)
+bool PCLViewPoint::CameraPosition(const PCLOctree& tree,
+                    const Eigen::Vector3f& target,
+                    const Eigen::Vector3f& normal,
+                    double distMin, double distMax,
+                    Eigen::Affine3f& camera,
+                    ViewPoint& vp)
 {
   bool bOk = true;
   double distance = distMax;
-  Eigen::Vector3f nm = normal;
-  Eigen::Vector3f unitNormal = nm.normalized();
-  camera = target + distance*unitNormal;
-  while (camera.z() < 0.35)
+  Eigen::Vector3f nm = normal.normalized();
+  Eigen::Vector3f pt = target + distance*nm;
+  camera = CameraPose(pt,-nm);
+  while (FilterViewPoint(tree,camera,vp))
   {
     distance = distance - 0.1;
     if (distance > distMin)
-      camera = target + distance*unitNormal;
+    {
+      pt = target + distance*nm;
+      camera = CameraPose(pt,-nm);
+    }
     else
     {
       bOk = false;
@@ -164,6 +161,12 @@ bool PCLViewPoint::FilterViewPoint(const PCLOctree& tree, const Eigen::Affine3f&
   double qr_x = vp.quadrotor_pose.pos_x;
   double qr_y = vp.quadrotor_pose.pos_y;
   double qr_z = vp.quadrotor_pose.pos_z;
+  // height limitation
+  if (qr_z < 0.31)
+  {
+    return true;
+  }
+
   // bounding box collsion check
   Eigen::Vector3f minPt(qr_x-0.5, qr_y-0.5, qr_z-0.35);
   Eigen::Vector3f maxPt(qr_x+0.5, qr_y+0.5, qr_z+0.05);
