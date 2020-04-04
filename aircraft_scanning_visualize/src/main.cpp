@@ -32,7 +32,7 @@ void UpdatePointCloud(PCLViewer* viewer, const std::string& dir, bool bFilter)
   //std::thread t(ViewerSpin, viewer);
   std::vector<std::string> files;
   WSPointCloudPtr cloud(new WSPointCloud());
-  int i = 0;
+
   int all = 0;
 
   while (!viewer->IsStop())
@@ -48,11 +48,10 @@ void UpdatePointCloud(PCLViewer* viewer, const std::string& dir, bool bFilter)
     bool bNewCloud = false;
     for (const auto& file : allfiles)
     {
-        i++;
         std::vector<std::string>::iterator end = files.end();
         if (std::find(files.begin(),files.end(),file) == files.end())
         {
-            std::cout << "pcl == load " << i << "/" << all << " point cloud from " << file << std::endl;
+            std::cout << "pcl == load " << all << " point cloud from " << file << std::endl;
             WSPointCloudPtr temp(new WSPointCloud());
             int res = pcl::io::loadPLYFile(file, *temp);
             if(res < 0)

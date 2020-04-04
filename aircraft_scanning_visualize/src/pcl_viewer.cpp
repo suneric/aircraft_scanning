@@ -193,7 +193,7 @@ void PCLViewer::AddLine(const WSPoint& startPt, const WSPoint& endPt, int idx, d
 void PCLViewer::AddPolygon(const WSPointCloudPtr& polygon, const std::string& id, double r, double g, double b, int vp)
 {
   m_viewer->addPolygon<WSPoint>(polygon,r,g,b,id,vp);
-  m_viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_REPRESENTATION, 2, id);
+  m_viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_REPRESENTATION, 1, id);
   m_viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_OPACITY, 0.2, id);
   m_viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_LINE_WIDTH, 2, id);
 }

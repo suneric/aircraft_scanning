@@ -9,7 +9,8 @@ class trajectory_defined:
     def __init__(self):
         self.trajectory = []
         self.index = 0
-        self._create_trajectory()
+        #self._create_wing_trajectory()
+        self._load_trajectory("/home/yufeng/Temp/trajectory.txt")
 
     def completed(self):
         return self.index >= len(self.trajectory)
@@ -21,6 +22,47 @@ class trajectory_defined:
             cp = self.trajectory[self.index]
             self.index = self.index + 1
             return cp
+
+    def _load_trajectory(self,file):
+        with open(file,'r') as reader:
+            for line in reader.read().splitlines():
+                data = line.split(" ")
+                idx = int(data[0])
+                px = float(data[1])
+                py = float(data[2])
+                pz = float(data[3])
+                ox = float(data[4])
+                oy = float(data[5])
+                oz = float(data[6])
+                ow = float(data[7])
+                angle = float(data[8])
+                pose = Pose();
+                pose.position.x = px
+                pose.position.y = py
+                pose.position.z = pz
+                pose.orientation.x = ox
+                pose.orientation.y = oy
+                pose.orientation.z = oz
+                pose.orientation.w = ow
+                self.trajectory.append([pose,angle])
+        reader.close()
+
+
+    def _create_wing_trajectory(self):
+        self._create_intermediate(0,-28,9,0.5*pi,0)
+        self._create_intermediate(-18,4,9,0.5*pi,0.5*pi)
+        self._create_intermediate(-13,2,9,0.5*pi,0.5*pi)
+        self._create_intermediate(-8,-2,9,0.5*pi,0.45*pi)
+        self._create_intermediate(-8,2,7,-0.5*pi,0.45*pi)
+        self._create_intermediate(-3,-3,11,0,0.4*pi)
+        self._create_intermediate(-3,1,11,0,0.4*pi)
+        self._create_intermediate(3,1,11,pi,0.4*pi)
+        self._create_intermediate(3,-3,11,pi,0.4*pi)
+        self._create_intermediate(8,-2,9,0.5*pi,0.45*pi)
+        self._create_intermediate(8,2,7,-0.5*pi,0.45*pi)
+        self._create_intermediate(13,2,9,0.5*pi,0.5*pi)
+        self._create_intermediate(18,4,9,0.5*pi,0.5*pi)
+        self._create_intermediate(0,-28,9,0.5*pi,0)
 
     def _create_trajectory(self):
         self._create_intermediate(0,-27,11,0.5*pi)

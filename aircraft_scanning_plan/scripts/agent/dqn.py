@@ -28,7 +28,7 @@ class Memory:
         return zip(*batch)
 
 class DQNAgent:
-    def __init__(self, params, env):
+    def __init__(self, params):
         self.name = params['name']
         self.state_dim = params['state_dim']
         self.action_dim = params['action_dim']
@@ -43,8 +43,6 @@ class DQNAgent:
         self.optimizer = tf.keras.optimizers.Adam(lr=self.learning_rate)
         self.loss_fn = tf.keras.losses.MeanSquaredError()
         self.mse_metric = tf.keras.metrics.MeanSquaredError()
-
-        self.env = env
 
     def train(self, batch_size, gamma):
         # data: (state, action, reward, next state) patch
@@ -65,7 +63,7 @@ class DQNAgent:
             target_q = b_rewards + (1.-b_doneflags)*gamma*tf.math.reduce_max(logits_s, axis=-1)
             # aim to convergent two networks
             loss_value = self.loss_fn(y_true=target_q, y_pred=pred_q)
-            #print("loss",loss_value)
+            #print("loss",loss_value, pred_q, target_q)
         # retrieve the gradients of trainable variables with respect to the loss
         grads = tape.gradient(loss_value, self.qnet_active.trainable_weights)
         # run one step of gradient descent
@@ -85,14 +83,12 @@ class DQNAgent:
 
     # choose next viewpoint (action) based on voxels state (oservation)
     def epsilon_greedy(self,state,action_dim):
-        action = 0
         # low epsilon means more randomly choose the action
         if np.random.rand() > self.epsilon:
             digits = self.qnet_active(state.reshape(1,-1))
-            action = np.argmax(digits.numpy().flatten())
+            return np.argmax(digits.numpy().flatten())
         else:
-            action = np.random.randint(action_dim)
-        return action
+            return np.random.randint(action_dim)
 
     # build multi-layer perceptron nueral network
     def _nn_mlp(self, state_dim, action_dim, layer_sizes):

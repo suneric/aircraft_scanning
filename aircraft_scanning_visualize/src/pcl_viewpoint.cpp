@@ -162,9 +162,15 @@ bool PCLViewPoint::FilterViewPoint(const PCLOctree& tree, const Eigen::Affine3f&
   double qr_y = vp.quadrotor_pose.pos_y;
   double qr_z = vp.quadrotor_pose.pos_z;
   // height limitation
-  if (qr_z < 0.31)
+  if (qr_z < 6.0)
   {
     return true;
+  }
+
+  if (qr_x < 3 && qr_x >-3)
+  {
+    if (qr_z < 6 || qr_y <-7 || qr_y > 2)
+      return true;
   }
 
   // bounding box collsion check
