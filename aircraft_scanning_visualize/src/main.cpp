@@ -21,14 +21,131 @@ using namespace std;
 static std::mutex mtx;
 
 void PrintHelp();
-int  ParseArguments(int argc, char** argv, std::string& dir,
-  std::string& trajectory, bool& save, bool& filter,double& distance,
-  double& resolution, int& display, int& sampleType, std::vector<double>& limitBox);
-WSPointCloudPtr FilterPointCloud(const WSPointCloudPtr cloud);
-void GenerateViewpoints(PCLViewer* viewer, const WSPointCloudPtr cloud, double distance,double resolution, int display, int sampleType = 0);
-void SegmentPointCloud(PCLViewer* viewer, const std::string& dir, const std::vector<double>& limitBox, bool bFilter);
+int  ParseArguments(int argc, char** argv,
+  std::string& dir,
+  std::string& trajectory,
+  bool& save,
+  bool& filter,
+  double& distance,
+  double& resolution,
+  int& display,
+  int& sampleType,
+  std::vector<double>& limitBox,
+  Eigen::Vector3f& refNormal);
 
-void UpdatePointCloud(PCLViewer* viewer, const std::string& dir, bool bFilter)
+WSPointCloudPtr FilterPointCloud(const WSPointCloudPtr cloud,
+  double resolution);
+
+void GenerateViewpoints(PCLViewer* viewer,
+  const WSPointCloudPtr cloud,
+  double distance,
+  double resolution,
+  int display,
+  const Eigen::Vector3f& refNormal,
+  int sampleType = 0);
+
+void UpdatePointCloud(PCLViewer* viewer,
+  const std::string& dir,
+  bool bFilter,
+  double resolution);
+
+void DisplayTrajectory(PCLViewer* viewer,
+  const std::string& dir,
+  const std::string& file,
+  double resolution,
+  int type);
+
+void SegmentPointCloud(PCLViewer* viewer,
+  const std::string& dir,
+  const std::vector<double>& limitBox,
+  bool bFilter);
+
+
+void AddCubes(PCLViewer* viewer,const std::vector<WSPoint>& points, const std::string& nameprefix, double voxelLen, int vp, double r, double g, double b)
+{
+  for (size_t i = 0; i < points.size(); ++i)
+  {
+    WSPoint c = points[i];
+    std::string name = nameprefix;
+    name.append("-").append(std::to_string(i));
+    viewer->AddCube(c,0.5*voxelLen,name,r,g,b,vp);
+  }
+}
+
+int main(int argc, char** argv) try
+{
+  bool bSave = false;
+  bool bFilter = false;
+  std::string dir = "";
+  std::string trajectory = "";
+  double resolution = 1.0;
+  int display = -5;
+  double distance = -1;
+  int sampleType = 0;
+  std::vector<double> limitBox;
+  Eigen::Vector3f refNormal(0,0,1);
+  int task = ParseArguments(argc,argv,dir,
+    trajectory,
+    bSave,
+    bFilter,
+    distance,
+    resolution,
+    display,
+    sampleType,
+    limitBox,
+    refNormal);
+
+  PCLViewer viewer("3D Point Cloud Viewer");
+  if(task == 1)
+  {
+    std::thread t(DisplayTrajectory, &viewer, dir, trajectory, resolution, sampleType);
+    while (!viewer.IsStop()) {
+      mtx.lock();
+      viewer.SpinOnce();
+      mtx.unlock();
+    }
+    t.join();
+  }
+  else if (task == 2)
+  {
+    std::thread t(UpdatePointCloud, &viewer, dir, bFilter,resolution);
+    while (!viewer.IsStop()) {
+      mtx.lock();
+      viewer.SpinOnce();
+      mtx.unlock();
+    }
+    t.join();
+  }
+  else if (task == 3)
+  {
+    WSPointCloudPtr cloud = viewer.LoadPointCloud(dir);
+    GenerateViewpoints(&viewer, cloud, distance, resolution, display, refNormal, sampleType);
+    while(!viewer.IsStop())
+      viewer.Spin();
+  }
+  else if (task == 4)
+  {
+    SegmentPointCloud(&viewer, dir, limitBox, bFilter);
+    while(!viewer.IsStop())
+      viewer.Spin();
+  }
+  else
+  {
+    PrintHelp();
+  }
+
+  if (bSave)
+    viewer.SavePointCloud(viewer.PointCloud(),dir);
+
+  return task;
+}
+catch (const std::exception& e)
+{
+  std::cout << e.what() << std::endl;
+  return -1;
+}
+
+void UpdatePointCloud(PCLViewer* viewer, const std::string& dir, bool bFilter,double resolution)
 {
   // add a new thread for spin the viewer
   //std::thread t(ViewerSpin, viewer);
@@ -59,7 +176,7 @@ void UpdatePointCloud(PCLViewer* viewer, const std::string& dir, bool bFilter)
             if(res < 0)
               std::cout << "pcl == failed to load point cloud." << std::endl;
             if (bFilter)
-              temp = FilterPointCloud(temp);
+              temp = FilterPointCloud(temp,resolution);
 
             mtx.lock();
             *cloud += *temp;
@@ -82,17 +199,6 @@ void UpdatePointCloud(PCLViewer* viewer, const std::string& dir, bool bFilter)
   }
 }
 
-void AddCubes(PCLViewer* viewer,const std::vector<WSPoint>& points, const std::string& nameprefix, double voxelLen, int vp, double r, double g, double b)
-{
-  for (size_t i = 0; i < points.size(); ++i)
-  {
-    WSPoint c = points[i];
-    std::string name = nameprefix;
-    name.append("-").append(std::to_string(i));
-    viewer->AddCube(c,0.5*voxelLen,name,r,g,b,vp);
-  }
-}
-
 void DisplayTrajectory(PCLViewer* viewer, const std::string& dir, const std::string& file, double resolution, int type)
 {
   PCLViewPoint viewCreator;
@@ -103,14 +209,12 @@ void DisplayTrajectory(PCLViewer* viewer, const std::string& dir, const std::str
     std::cout << vps.size() << " viewpoints found in trajectory." << std::endl;
   }
 
-
   WSPointCloudPtr cloud = viewer->LoadPointCloud(dir);
   mtx.lock();
   viewer->AddPointCloud(cloud,0);
   mtx.unlock();
 
-  Eigen::Vector3f refNormal(1.0,0.0,0.0);
-  PCLOctree octree(cloud, resolution,refNormal, 5);
+  PCLOctree octree(cloud,0.5*resolution,3);
 
   double voxelLen = octree.VoxelSideLength();
   WSPointCloudPtr vCloud = octree.VoxelCentroidCloud();
@@ -206,70 +310,14 @@ void DisplayTrajectory(PCLViewer* viewer, const std::string& dir, const std::str
   }
 }
 
-int main(int argc, char** argv) try
-{
-  bool bSave = false;
-  bool bFilter = false;
-  std::string dir = "";
-  std::string trajectory = "";
-  double resolution = 1.0;
-  int display = -5;
-  double distance = -1;
-  int sampleType = 0;
-  std::vector<double> limitBox;
-  int task = ParseArguments(argc, argv, dir, trajectory, bSave, bFilter, distance, resolution, display, sampleType, limitBox);
-  PCLViewer viewer("3D Point Cloud Viewer");
-  if (task == 2)
-  {
-    std::thread t(UpdatePointCloud, &viewer, dir, bFilter);
-    while (!viewer.IsStop()) {
-      mtx.lock();
-      viewer.SpinOnce();
-      mtx.unlock();
-    }
-    t.join();
-  }
-  else if(task == 1)
-  {
-    std::thread t(DisplayTrajectory, &viewer, dir, trajectory, resolution, sampleType);
-    while (!viewer.IsStop()) {
-      mtx.lock();
-      viewer.SpinOnce();
-      mtx.unlock();
-    }
-    t.join();
-  }
-  else if (task == 3)
-  {
-    WSPointCloudPtr cloud = viewer.LoadPointCloud(dir);
-    GenerateViewpoints(&viewer, cloud, distance, resolution, display, sampleType);
-    while(!viewer.IsStop())
-      viewer.Spin();
-  }
-  else if (task == 4)
-  {
-    SegmentPointCloud(&viewer, dir, limitBox, bFilter);
-    while(!viewer.IsStop())
-      viewer.Spin();
-  }
-  else
-  {
-    PrintHelp();
-  }
-
-  if (bSave)
-    viewer.SavePointCloud(viewer.PointCloud(),dir);
-
-  return task;
-}
-catch (const std::exception& e)
-{
-  std::cout << e.what() << std::endl;
-  return -1;
-}
-
 // generate viewpoints with distance to the aircraft and resolution of octree
-void GenerateViewpoints(PCLViewer* viewer, const WSPointCloudPtr srcCloud, double distance, double resolution, int display, int sampleType)
+void GenerateViewpoints(PCLViewer* viewer,
+  const WSPointCloudPtr srcCloud,
+  double distance,
+  double resolution,
+  int display,
+  const Eigen::Vector3f& refNormal,
+  int sampleType)
 {
   if (nullptr == srcCloud)
     return;
@@ -278,35 +326,43 @@ void GenerateViewpoints(PCLViewer* viewer, const WSPointCloudPtr srcCloud, doubl
   // viewpoint creator
   PCLViewPoint viewCreator;
 
-  //// THIS SHOULD BE CHANGED for different part of the aircraft.
-  Eigen::Vector3f refNormal(0.0,0.0,1.0); // reference normal
-
   // create camera along the voxel normals
   std::vector<ViewPoint> vps;
   std::vector<Eigen::Affine3f> cameras;
-  PCLOctree octree(srcCloud, resolution, refNormal,3);
+  PCLOctree octree(srcCloud, resolution,3);
   viewCreator.GenerateCameraPositions(octree,distance,refNormal,cameras,vps);
-
-
-  // filter viewpoints
-  std::vector<ViewPoint> viewpointVec;
-  std::vector<Eigen::Affine3f> cameraPoseVec;
-  for (int i = 0; i < cameras.size(); ++i)
-  {
-    if (!viewCreator.FilterViewPoint(octree,cameras[i],vps[i]))
-    {
-      viewpointVec.push_back(vps[i]);
-      cameraPoseVec.push_back(cameras[i]);
-    }
-  }
-  std::cout << cameraPoseVec.size() << " camere position generated." << std::endl;
 
   ////////////////////////////////////////////////////////////////////////////
   // voxel in view frustum culling
   // use a higher resolution to calculate voxel coverage
+  PCLOctree octree2(srcCloud,0.5*resolution,3);
+  // filter viewpoints
+  std::vector<ViewPoint> viewpointVec;
+  std::vector<Eigen::Affine3f> cameraPoseVec;
+  for (size_t i = 0; i < cameras.size(); ++i)
+  {
+    ViewPoint vp = vps[i];
+    double qr_x = vp.quadrotor_pose.pos_x;
+    double qr_y = vp.quadrotor_pose.pos_y;
+    double qr_z = vp.quadrotor_pose.pos_z;
+    //height limitation
+    if (qr_z < 5)
+      continue;
+    if (qr_x < 2.5 && qr_x > -2.5)
+    {
+      if (qr_y > 7 || qr_y < -7 || qr_z < 7)
+        continue;
+    }
+
+    if(viewCreator.FilterViewPoint(octree2,cameras[i],vp))
+      continue;
+
+    viewpointVec.push_back(vps[i]);
+    cameraPoseVec.push_back(cameras[i]);
+  }
+
   std::vector<int> voxelCoveredVec;
   std::map<int, std::vector<int> > viewVoxelMap;
-  PCLOctree octree2(srcCloud,0.3,refNormal,3);
   for (size_t i = 0; i < cameraPoseVec.size(); ++i)
   {
     std::vector<int> visibleVoxels;
@@ -319,6 +375,8 @@ void GenerateViewpoints(PCLViewer* viewer, const WSPointCloudPtr srcCloud, doubl
         voxelCoveredVec.push_back(vIndex);
     }
   }
+  std::cout << cameraPoseVec.size() << " filtered camere positions / " << vps.size() << " generated." << std::endl;
+
 
   ////////////////////////////////////////////////////////////////////////////
   // voxel coverage
@@ -388,113 +446,6 @@ void GenerateViewpoints(PCLViewer* viewer, const WSPointCloudPtr srcCloud, doubl
   }
 }
 
-////////////////////////////////////////////////////////////////
-WSPointCloudPtr FilterPointCloud(const WSPointCloudPtr srcCloud)
-{
-  PCLFilter filter;
-  WSPointCloudPtr cloud(new WSPointCloud);
-  // filter z < 0.02 and z > 10 point
-  std::cout << "Filtering: pass through z out of [0.05,20]..." << std::endl;
-  cloud = filter.FilterPassThrough(srcCloud,"z",0.05,20);
-  /*
-  remove outlier
-  The number of neighbors to analyze for each point is set to 50,
-  and the standard deviation multiplier to 1. What this means is
-  that all points who have a distance larger than 1 standard
-  deviation of the mean distance to the query point will be marked
-  as outliers and removed.
-  */
-  std::cout << "Filtering: outlier with 50 samples in 1 standard deviation..." << std::endl;
-  cloud = filter.FilterPCLPointSOR(cloud,50,1);
-  // downsampling with neighbor distance 0.1
-  std::cout << "Filtering: downsampling with 0.1 meter neighbor distance..." << std::endl;
-  cloud = filter.FilterPCLPoint(cloud,0.1);
-  return cloud;
-}
-
-void PrintHelp()
-{
-  std::cout << "This app is used for visualizing the point cloud by loading the '.ply' files in a directory.\n";
-  std::cout << "Command line with providing a directory containing the .ply files:\n";
-  std::cout << "    1. view point cloud:   cmd [-view|-v] [file_directory] [octree resolution] [display_type] [trajectory]\n";
-  std::cout << "    2. merge pointcloud:   cmd [-merge|-m] [file_directory] [filter]\n";
-  std::cout << "    3. create viewpoints:  cmd [-trajectory|-t] [file_directory] [viewpoint distance] [octree resolution] [display_type]\n";
-  std::cout << "       display_type: '-4': uncovered voxels; '-3': covered voxels; '-2': add octree voxels; '-1': add camera positions;\n";
-  std::cout << "    4. segment pointcloud: cmd [-segment|-s] [file_directory] [xmin] [xmax] [ymin] [ymax] [zmin] [zmax]\n";
-}
-
-int ParseArguments(int argc, char** argv,
-                  std::string& dir,
-                  std::string& trajectory,
-                  bool& save,
-                  bool& filter,
-                  double& distance,
-                  double& resolution,
-                  int& display,
-                  int& sampleType,
-                  std::vector<double>& limitBox)
-{
-  if (argc < 2)
-    return 0;
-
-  std::string task = std::string(argv[1]);
-  if (task.compare("-v") == 0 || task.compare("-view") == 0)
-  {
-    dir = std::string(argv[2]);
-    if (argc > 3)
-      resolution = std::stod(argv[3]);
-    if (argc > 4)
-      sampleType = std::stoi(argv[4]);
-    if (argc > 5)
-      trajectory = std::string(argv[5]);
-
-    return 1;
-  }
-  else if (task.compare("-m") == 0 || task.compare("-merge") == 0)
-  {
-    save = true;
-    dir = std::string(argv[2]);
-    if (argc > 3)
-      filter = std::string(argv[3]).compare("1")==0;
-    return 2;
-  }
-  else if (task.compare("-t") == 0 || task.compare("-trajectory") == 0)
-  {
-    dir = std::string(argv[2]);
-    if (argc > 3)
-      distance = std::stod(argv[3]);
-    if (argc > 4)
-      resolution = std::stod(argv[4]);
-    if (argc > 5)
-      display = std::stoi(argv[5]);
-    if (argc > 6)
-      sampleType = std::stoi(argv[6]);
-    return 3;
-  }
-  else if (task.compare("-s")==0 || task.compare("-segment") == 0)
-  {
-    save = true;
-    dir = std::string(argv[2]);
-    if (argc > 8)
-    {
-      limitBox.push_back(std::stod(argv[3]));
-      limitBox.push_back(std::stod(argv[4]));
-      limitBox.push_back(std::stod(argv[5]));
-      limitBox.push_back(std::stod(argv[6]));
-      limitBox.push_back(std::stod(argv[7]));
-      limitBox.push_back(std::stod(argv[8]));
-    }
-    if (argc > 9)
-      filter = std::string(argv[9]).compare("1")==0;
-
-    return 4;
-  }
-  else
-  {
-    return 0;
-  }
-}
-
 void SegmentPointCloud(PCLViewer* viewer, const std::string& dir, const std::vector<double>& bbox, bool bFilter)
 {
   WSPointCloudPtr cloud = viewer->LoadPointCloud(dir);
@@ -531,5 +482,123 @@ void SegmentPointCloud(PCLViewer* viewer, const std::string& dir, const std::vec
     cloud = filter.FilterPCLPointInBBox(cloud,bbox,bFilter);
     int vp = viewer->CreateViewPort(0,0,1,1);
     viewer->AddPointCloud(cloud,vp);
+  }
+}
+
+////////////////////////////////////////////////////////////////
+WSPointCloudPtr FilterPointCloud(const WSPointCloudPtr srcCloud, double resolution)
+{
+  PCLFilter filter;
+  WSPointCloudPtr cloud(new WSPointCloud);
+  // filter z < 0.02 and z > 10 point
+  std::cout << "Filtering: pass through z out of [0.05,20]..." << std::endl;
+  cloud = filter.FilterPassThrough(srcCloud,"z",0.05,20);
+  /*
+  remove outlier
+  The number of neighbors to analyze for each point is set to 50,
+  and the standard deviation multiplier to 1. What this means is
+  that all points who have a distance larger than 1 standard
+  deviation of the mean distance to the query point will be marked
+  as outliers and removed.
+  */
+  std::cout << "Filtering: outlier with 50 samples in 1 standard deviation..." << std::endl;
+  cloud = filter.FilterPCLPointSOR(cloud,50,1);
+  // downsampling with neighbor distance 0.1
+  std::cout << "Filtering: downsampling with " << resolution << " meter neighbor distance..." << std::endl;
+  cloud = filter.FilterPCLPoint(cloud,resolution);
+  return cloud;
+}
+
+void PrintHelp()
+{
+  std::cout << "This app is used for visualizing the point cloud by loading the '.ply' files in a directory.\n";
+  std::cout << "Command line with providing a directory containing the .ply files:\n";
+  std::cout << "    1. view point cloud:   cmd [-view|-v] [file_directory] [octree resolution] [display_type] [trajectory]\n";
+  std::cout << "    2. merge pointcloud:   cmd [-merge|-m] [file_directory] [filter] [downsample resolution]\n";
+  std::cout << "    3. create viewpoints:  cmd [-trajectory|-t] [file_directory] [viewpoint distance] [octree resolution] [display_type] [nx] [ny] [nz]\n";
+  std::cout << "       display_type: '-4': uncovered voxels; '-3': covered voxels; '-2': add octree voxels; '-1': add camera positions;\n";
+  std::cout << "    4. segment pointcloud: cmd [-segment|-s] [file_directory] [xmin] [xmax] [ymin] [ymax] [zmin] [zmax]\n";
+}
+
+int ParseArguments(int argc, char** argv,
+                  std::string& dir,
+                  std::string& trajectory,
+                  bool& save,
+                  bool& filter,
+                  double& distance,
+                  double& resolution,
+                  int& display,
+                  int& sampleType,
+                  std::vector<double>& limitBox,
+                  Eigen::Vector3f& refNormal
+                )
+{
+  if (argc < 2)
+    return 0;
+
+  std::string task = std::string(argv[1]);
+  if (task.compare("-v") == 0 || task.compare("-view") == 0)
+  {
+    dir = std::string(argv[2]);
+    if (argc > 3)
+      resolution = std::stod(argv[3]);
+    if (argc > 4)
+      sampleType = std::stoi(argv[4]);
+    if (argc > 5)
+      trajectory = std::string(argv[5]);
+
+    return 1;
+  }
+  else if (task.compare("-m") == 0 || task.compare("-merge") == 0)
+  {
+    save = true;
+    dir = std::string(argv[2]);
+    if (argc > 3)
+      filter = std::string(argv[3]).compare("1")==0;
+    if (argc > 4)
+      resolution = std::stod(argv[4]);
+    return 2;
+  }
+  else if (task.compare("-t") == 0 || task.compare("-trajectory") == 0)
+  {
+    dir = std::string(argv[2]);
+    if (argc > 3)
+      distance = std::stod(argv[3]);
+    if (argc > 4)
+      resolution = std::stod(argv[4]);
+    if (argc > 5)
+      display = std::stoi(argv[5]);
+    if (argc > 6)
+      sampleType = std::stoi(argv[6]);
+    if (argc > 9)
+    {
+      double x = std::stod(argv[7]);
+      double y = std::stod(argv[8]);
+      double z = std::stod(argv[9]);
+      refNormal = Eigen::Vector3f(x,y,z);
+    }
+    return 3;
+  }
+  else if (task.compare("-s")==0 || task.compare("-segment") == 0)
+  {
+    save = true;
+    dir = std::string(argv[2]);
+    if (argc > 8)
+    {
+      limitBox.push_back(std::stod(argv[3]));
+      limitBox.push_back(std::stod(argv[4]));
+      limitBox.push_back(std::stod(argv[5]));
+      limitBox.push_back(std::stod(argv[6]));
+      limitBox.push_back(std::stod(argv[7]));
+      limitBox.push_back(std::stod(argv[8]));
+    }
+    if (argc > 9)
+      filter = std::string(argv[9]).compare("1")==0;
+
+    return 4;
+  }
+  else
+  {
+    return 0;
   }
 }

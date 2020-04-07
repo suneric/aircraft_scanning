@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import rospy
 import numpy as np
+import os
+import sys
 from math import *#sin, cos, acos, asin, radians
 from geometry_msgs.msg import Pose
 import transform
@@ -10,7 +12,8 @@ class trajectory_defined:
         self.trajectory = []
         self.index = 0
         #self._create_wing_trajectory()
-        self._load_trajectory("/home/yufeng/Temp/trajectory.txt")
+        file = os.path.join(sys.path[0],'../../aircraft_scanning_plan/trajectory/viewpoints.txt');
+        self._load_trajectory(file)
 
     def completed(self):
         return self.index >= len(self.trajectory)
@@ -24,6 +27,7 @@ class trajectory_defined:
             return cp
 
     def _load_trajectory(self,file):
+        print("load trajectory from", file)
         with open(file,'r') as reader:
             for line in reader.read().splitlines():
                 data = line.split(" ")

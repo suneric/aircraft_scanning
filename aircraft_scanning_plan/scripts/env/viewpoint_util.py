@@ -46,7 +46,7 @@ class ScanningUtil(object):
             else:
                 unoverlapList.append(i)
                 unoverlapDist.append(self.distance_i(vpIdx,i))
-
+        #print(overlapList)
         neighbors = []
         size = self.action_dim
         overlapSize = len(overlapList)

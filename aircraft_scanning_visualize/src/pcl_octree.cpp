@@ -9,7 +9,7 @@
 
 using namespace asv3d;
 
-PCLOctree::PCLOctree(const WSPointCloudPtr& cloud, double resolution, const Eigen::Vector3f& refNormal, int minVoxelPts)
+PCLOctree::PCLOctree(const WSPointCloudPtr& cloud, double resolution, int minVoxelPts)
 {
   // define a octree search
   m_cloud = cloud;
@@ -29,10 +29,7 @@ PCLOctree::PCLOctree(const WSPointCloudPtr& cloud, double resolution, const Eige
     WSPoint center = centroids[i];
     std::vector<int> voxelIndices;
     if (m_os->voxelSearch(center,voxelIndices) && voxelIndices.size() >= minVoxelPts)
-    {
-      if (IsOutsideVoxel(center,refNormal))
         m_voxelMap.AddVoxel(center,voxelSideLen);
-    }
   }
 
   std::vector<int> indices;

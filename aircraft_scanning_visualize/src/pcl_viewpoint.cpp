@@ -56,6 +56,11 @@ bool PCLViewPoint::CameraPosition(const PCLOctree& tree,
   bool bOk = true;
   Eigen::Vector3f nm = normal.normalized();
   Eigen::Vector3f pt = target + distance*nm;
+  while (pt.z() < 0.5)
+  {
+    distance = 0.9*distance;
+    pt = target + distance*nm;
+  }
   double alpha = 0.0, beta = 0.0; // yaw and pitch
   camera = CameraPose(pt,-nm, alpha, beta);
   vp = CreateViewPoint(camera,alpha,beta);
@@ -196,7 +201,7 @@ bool PCLViewPoint::IsVisibleVoxel(const PCLOctree& tree, const Eigen::Vector3f& 
     std::vector<WSPoint> intesects;
     int nRes = tree.IntersectedOccupiedVoxels(camera, c);
     //std::cout << "intersects " << nRes << std::endl;
-    if (nRes <= 2) // consider the two voxel share the same edge
+    if (nRes <= 1) // consider the two voxel share the same edge
       visibleSide++;
   }
   //std::cout << "visible side " << visibleSide << std::endl;
@@ -230,18 +235,6 @@ bool PCLViewPoint::FilterViewPoint(const PCLOctree& tree, const Eigen::Affine3f&
   double qr_x = vp.quadrotor_pose.pos_x;
   double qr_y = vp.quadrotor_pose.pos_y;
   double qr_z = vp.quadrotor_pose.pos_z;
-  // height limitation
-  if (qr_z < 3)
-    return true;
-
-  if (qr_x < 2.5 && qr_x > -2.5)
-  {
-    if (qr_y > 7 || qr_y < -7)
-      return true;
-
-    if (qr_z < 7)
-      return true;
-  }
 
   // bounding box collsion check
   Eigen::Vector3f minPt(qr_x-0.5, qr_y-0.5, qr_z-0.35);
@@ -251,10 +244,9 @@ bool PCLViewPoint::FilterViewPoint(const PCLOctree& tree, const Eigen::Affine3f&
     return true;
 
   // no point in view frustum
-  WSPointCloudPtr viewCloud(new WSPointCloud);
-  WSPointCloudPtr vCloud = tree.VoxelCentroidCloud();
-  FrustumCulling(vCloud,camera.matrix(),68,42,0.1,10.0,viewCloud);
-  if (viewCloud->points.size() == 0)
+  std::vector<int> voxelIndices;
+  CameraViewVoxels(tree,camera,voxelIndices);
+  if (voxelIndices.empty())
     return true;
 
   return false;
@@ -347,7 +339,6 @@ Eigen::Affine3f PCLViewPoint::ViewPoint2CameraPose(const ViewPoint& vp)
   Eigen::Matrix4f camera_pose = quadrotor_pose*quad2Cam;
   Eigen::Affine3f res;
   res.matrix() = camera_pose;
-
   return res;
 }
 
@@ -371,23 +362,40 @@ Eigen::Matrix4f PCLViewPoint::Quadrotor2Camera(double camera_angle)
   quadBase(3,2) = 0;
   quadBase(3,3) = 1;
   Eigen::Matrix4f cameraJoint;
-  cameraJoint(0,0) = cos(camera_angle);
+  cameraJoint(0,0) = cos(M_PI/2+camera_angle);
   cameraJoint(0,1) = 0;
-  cameraJoint(0,2) = sin(camera_angle);
+  cameraJoint(0,2) = sin(M_PI/2+camera_angle);
   cameraJoint(0,3) = 0.0358;
   cameraJoint(1,0) = 0;
   cameraJoint(1,1) = 1;
   cameraJoint(1,2) = 0;
   cameraJoint(1,3) = 0;
-  cameraJoint(2,0) = -sin(camera_angle);
+  cameraJoint(2,0) = -sin(M_PI/2+camera_angle);
   cameraJoint(2,1) = 0;
-  cameraJoint(2,2) = cos(camera_angle);
+  cameraJoint(2,2) = cos(M_PI/2+camera_angle);
   cameraJoint(2,3) = 0;
   cameraJoint(3,0) = 0;
   cameraJoint(3,1) = 0;
   cameraJoint(3,2) = 0;
   cameraJoint(3,3) = 1;
-  Eigen::Matrix4f quad2Camera = quadBase*cameraJoint;
+  Eigen::Matrix4f rotate;
+  rotate(0,0) = cos(-M_PI/2);
+  rotate(0,1) = -sin(-M_PI/2);
+  rotate(0,2) = 0;
+  rotate(0,3) = 0;
+  rotate(1,0) = sin(-M_PI/2);
+  rotate(1,1) = cos(-M_PI/2);
+  rotate(1,2) = 0;
+  rotate(1,3) = 0;
+  rotate(2,0) = 0;
+  rotate(2,1) = 0;
+  rotate(2,2) = 1;
+  rotate(2,3) = 0;
+  rotate(3,0) = 0;
+  rotate(3,1) = 0;
+  rotate(3,2) = 0;
+  rotate(3,3) = 1;
+  Eigen::Matrix4f quad2Camera = quadBase*cameraJoint*rotate;
   return quad2Camera;
 }
 
@@ -408,7 +416,6 @@ void PCLViewPoint::Save2File(const std::string& output,
                       << viewpt.quadrotor_pose.ori_z << " "
                       << viewpt.quadrotor_pose.ori_w << " "
                       << viewpt.camera_angle << " ";
-    // std::cout << viewVoxelMap[i].size() << std::endl;
     for (size_t j = 0; j < voxelMap[i].size(); ++j)
     {
       int vIndex = voxelMap[i][j];

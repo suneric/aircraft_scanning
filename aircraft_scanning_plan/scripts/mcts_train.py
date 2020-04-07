@@ -60,7 +60,7 @@ class MCTSNodeCost(MCTSNode):
 
     def rollout(self, target_coverage):
         cState = self.state
-        while cState.neighbors() < target_coverage:
+        while cState.coverage() < target_coverage:
             neighbors = cState.unvisited_neighbors()
             if len(neighbors) == 0:
                 neighbors = cState.neighbors()
@@ -208,7 +208,7 @@ if __name__ == "__main__":
     fe = args.fe
     print("parameters: action dimension", action_dim,"iteration number", simulation_count, "desired coverage", target_coverage,"c_param",cparam)
 
-    vpfile = os.path.join(os.path.dirname(sys.path[0]+"/viewpoint/"),"viewpoints.txt")
+    vpfile = os.path.join(os.path.dirname(sys.path[0]+"/../viewpoint/"),"viewpoints.txt")
     env = UAVScanningEnv(vpfile,ViewPoint(-1,0,-29,0,0,0,0,1,0),action_dim)
     start_time = time.time()
     state = env.reset()

@@ -26,7 +26,7 @@ class UAVScanningState(object):
     # current viewpoint neighbor indices
     def neighbors(self):
         return self.vpsNeighbor
-        
+
     def unvisited_neighbors(self):
         unvisited = []
         for v in self.vpsNeighbor:
@@ -109,7 +109,7 @@ class UAVScanningEnv(object):
 
 if __name__ == '__main__':
     # clean folder for save point cloud file
-    vpfile = os.path.join(sys.path[0],'../viewpoint/viewpoints.txt');
+    vpfile = os.path.join(sys.path[0],'../../viewpoint/viewpoints.txt');
     env = UAVScanningEnv(vpfile,ViewPoint(0,0,0,0,0,0,0,1,0),8)
     state = env.reset()
     neighbors = state.neighbors()

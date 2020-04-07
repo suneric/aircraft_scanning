@@ -39,6 +39,7 @@ class data_capture:
         #print(mat)
         cloud = self._cloud_process(pc,mat)
         if cloud != None:
+            print("save data.")
             self._save_cloud(cloud)
         else:
             print("no data captured.")

@@ -138,7 +138,7 @@ namespace asv3d {
   // Octree representation of input point cloud
   class PCLOctree {
   public:
-    PCLOctree(const WSPointCloudPtr& cloud, double resolution, const Eigen::Vector3f& refNormal, int minVoxelPts=5);
+    PCLOctree(const WSPointCloudPtr& cloud, double resolution, int minVoxelPts=5);
     PCLOctree(const PCLOctree& tree);
     PCLOctree& operator=(const PCLOctree& tree);
     ~PCLOctree();
