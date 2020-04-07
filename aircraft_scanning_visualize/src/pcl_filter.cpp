@@ -7,10 +7,27 @@
 #include <pcl/filters/uniform_sampling.h>
 #include <pcl/filters/extract_indices.h>
 #include <pcl/filters/impl/sampling_surface_normal.hpp>
+#include <pcl/filters/crop_box.h>
 
 #include "pcl_filter.h"
 
 using namespace asv3d;
+
+WSPointCloudPtr PCLFilter::FilterPCLPointInBBox(const WSPointCloudPtr cloud, const std::vector<double>& bbox, bool bFilter)
+{
+  if (cloud == nullptr)
+    return nullptr;
+
+  pcl::CropBox<WSPoint> boxFilter(true);
+  boxFilter.setMin(Eigen::Vector4f(bbox[0], bbox[2], bbox[4], 1.0));
+  boxFilter.setMax(Eigen::Vector4f(bbox[1], bbox[3], bbox[5], 1.0));
+  boxFilter.setInputCloud(cloud);
+  boxFilter.setNegative(bFilter);
+  std::vector<int> indices;
+  boxFilter.filter(indices);
+  // std::cout << indices.size() << " " << bFilter << std::endl;
+  return ExtractPoints(cloud,indices);
+}
 
 WSPointCloudPtr PCLFilter::FilterPassThrough(const WSPointCloudPtr cloud, const std::string& field, double limit_min, double limit_max)
 {

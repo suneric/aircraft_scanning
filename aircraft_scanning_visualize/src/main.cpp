@@ -21,10 +21,12 @@ using namespace std;
 static std::mutex mtx;
 
 void PrintHelp();
-int  ParseArguments(int argc, char** argv, std::string& dir, std::string& trajectory, bool& save, bool& filter,double& distance, double& resolution, int& display, int& sampleType);
+int  ParseArguments(int argc, char** argv, std::string& dir,
+  std::string& trajectory, bool& save, bool& filter,double& distance,
+  double& resolution, int& display, int& sampleType, std::vector<double>& limitBox);
 WSPointCloudPtr FilterPointCloud(const WSPointCloudPtr cloud);
 void GenerateViewpoints(PCLViewer* viewer, const WSPointCloudPtr cloud, double distance,double resolution, int display, int sampleType = 0);
-void SegmentPointCloud(PCLViewer* viewer, const std::string& dir);
+void SegmentPointCloud(PCLViewer* viewer, const std::string& dir, const std::vector<double>& limitBox, bool bFilter);
 
 void UpdatePointCloud(PCLViewer* viewer, const std::string& dir, bool bFilter)
 {
@@ -107,7 +109,8 @@ void DisplayTrajectory(PCLViewer* viewer, const std::string& dir, const std::str
   viewer->AddPointCloud(cloud,0);
   mtx.unlock();
 
-  PCLOctree octree(cloud, resolution);
+  Eigen::Vector3f refNormal(1.0,0.0,0.0);
+  PCLOctree octree(cloud, resolution,refNormal, 5);
 
   double voxelLen = octree.VoxelSideLength();
   WSPointCloudPtr vCloud = octree.VoxelCentroidCloud();
@@ -172,10 +175,10 @@ void DisplayTrajectory(PCLViewer* viewer, const std::string& dir, const std::str
       mtx.lock();
       std::string text("viewpoint: ");
       text.append(std::to_string(i+1)).append("/").append(std::to_string(vps.size()));
-      double dCoverage = 100.0*(double(coveredVoxels.size()) / double(totalVoxel));
-      std::string coverage(", total coverage: ");
-      coverage.append(std::to_string(dCoverage)).append(" %");
-      text.append(coverage);
+      //double dCoverage = 100.0*(double(coveredVoxels.size()) / double(totalVoxel));
+      //std::string coverage(", total coverage: ");
+      //coverage.append(std::to_string(dCoverage)).append(" %");
+      //text.append(coverage);
       viewer->AddText(text, "text");
       if (type == -1)
       {
@@ -213,7 +216,8 @@ int main(int argc, char** argv) try
   int display = -5;
   double distance = -1;
   int sampleType = 0;
-  int task = ParseArguments(argc, argv, dir, trajectory, bSave, bFilter, distance, resolution, display, sampleType);
+  std::vector<double> limitBox;
+  int task = ParseArguments(argc, argv, dir, trajectory, bSave, bFilter, distance, resolution, display, sampleType, limitBox);
   PCLViewer viewer("3D Point Cloud Viewer");
   if (task == 2)
   {
@@ -244,7 +248,7 @@ int main(int argc, char** argv) try
   }
   else if (task == 4)
   {
-    SegmentPointCloud(&viewer, dir);
+    SegmentPointCloud(&viewer, dir, limitBox, bFilter);
     while(!viewer.IsStop())
       viewer.Spin();
   }
@@ -274,29 +278,44 @@ void GenerateViewpoints(PCLViewer* viewer, const WSPointCloudPtr srcCloud, doubl
   // viewpoint creator
   PCLViewPoint viewCreator;
 
+  //// THIS SHOULD BE CHANGED for different part of the aircraft.
+  Eigen::Vector3f refNormal(0.0,0.0,1.0); // reference normal
+
   // create camera along the voxel normals
-  std::vector<Eigen::Affine3f> cameraPoseVec;
+  std::vector<ViewPoint> vps;
+  std::vector<Eigen::Affine3f> cameras;
+  PCLOctree octree(srcCloud, resolution, refNormal,3);
+  viewCreator.GenerateCameraPositions(octree,distance,refNormal,cameras,vps);
+
+
+  // filter viewpoints
   std::vector<ViewPoint> viewpointVec;
-  PCLOctree octree(srcCloud, resolution);
-  viewCreator.GenerateCameraPositions(octree, distance, cameraPoseVec, viewpointVec, 1);
-  std::cout << cameraPoseVec.size() << " viewpoints generated." << std::endl;
+  std::vector<Eigen::Affine3f> cameraPoseVec;
+  for (int i = 0; i < cameras.size(); ++i)
+  {
+    if (!viewCreator.FilterViewPoint(octree,cameras[i],vps[i]))
+    {
+      viewpointVec.push_back(vps[i]);
+      cameraPoseVec.push_back(cameras[i]);
+    }
+  }
+  std::cout << cameraPoseVec.size() << " camere position generated." << std::endl;
 
   ////////////////////////////////////////////////////////////////////////////
   // voxel in view frustum culling
   // use a higher resolution to calculate voxel coverage
-  PCLOctree octree2(srcCloud,0.5);
   std::vector<int> voxelCoveredVec;
   std::map<int, std::vector<int> > viewVoxelMap;
+  PCLOctree octree2(srcCloud,0.3,refNormal,3);
   for (size_t i = 0; i < cameraPoseVec.size(); ++i)
   {
-    std::vector<int> visibleVoxelIndices;
-    WSPointCloudPtr viewCloud = viewCreator.CameraViewVoxels(octree2,cameraPoseVec[i],visibleVoxelIndices);
-    viewVoxelMap.insert(std::make_pair(static_cast<int>(i), visibleVoxelIndices));
-    // calculate covered voxels
-    for (size_t j = 0; j < visibleVoxelIndices.size(); ++j)
-    {
-      int vIndex = visibleVoxelIndices[j];
-      if (std::find(voxelCoveredVec.begin(), voxelCoveredVec.end(), vIndex) == voxelCoveredVec.end())
+    std::vector<int> visibleVoxels;
+    WSPointCloudPtr viewCloud = viewCreator.CameraViewVoxels(octree2,cameraPoseVec[i],visibleVoxels);
+    viewVoxelMap.insert(std::make_pair(static_cast<int>(i), visibleVoxels));
+    for (size_t j = 0; j < visibleVoxels.size(); ++j)
+    { // calculate covered voxels
+      int vIndex = visibleVoxels[j];
+      if (std::find(voxelCoveredVec.begin(),voxelCoveredVec.end(),vIndex) == voxelCoveredVec.end())
         voxelCoveredVec.push_back(vIndex);
     }
   }
@@ -401,7 +420,7 @@ void PrintHelp()
   std::cout << "    2. merge pointcloud:   cmd [-merge|-m] [file_directory] [filter]\n";
   std::cout << "    3. create viewpoints:  cmd [-trajectory|-t] [file_directory] [viewpoint distance] [octree resolution] [display_type]\n";
   std::cout << "       display_type: '-4': uncovered voxels; '-3': covered voxels; '-2': add octree voxels; '-1': add camera positions;\n";
-  std::cout << "    4. segment pointcloud: cmd [-segment|-s] [file_directory]\n";
+  std::cout << "    4. segment pointcloud: cmd [-segment|-s] [file_directory] [xmin] [xmax] [ymin] [ymax] [zmin] [zmax]\n";
 }
 
 int ParseArguments(int argc, char** argv,
@@ -412,7 +431,8 @@ int ParseArguments(int argc, char** argv,
                   double& distance,
                   double& resolution,
                   int& display,
-                  int& sampleType)
+                  int& sampleType,
+                  std::vector<double>& limitBox)
 {
   if (argc < 2)
     return 0;
@@ -453,7 +473,20 @@ int ParseArguments(int argc, char** argv,
   }
   else if (task.compare("-s")==0 || task.compare("-segment") == 0)
   {
+    save = true;
     dir = std::string(argv[2]);
+    if (argc > 8)
+    {
+      limitBox.push_back(std::stod(argv[3]));
+      limitBox.push_back(std::stod(argv[4]));
+      limitBox.push_back(std::stod(argv[5]));
+      limitBox.push_back(std::stod(argv[6]));
+      limitBox.push_back(std::stod(argv[7]));
+      limitBox.push_back(std::stod(argv[8]));
+    }
+    if (argc > 9)
+      filter = std::string(argv[9]).compare("1")==0;
+
     return 4;
   }
   else
@@ -462,28 +495,41 @@ int ParseArguments(int argc, char** argv,
   }
 }
 
-void SegmentPointCloud(PCLViewer* viewer, const std::string& dir)
+void SegmentPointCloud(PCLViewer* viewer, const std::string& dir, const std::vector<double>& bbox, bool bFilter)
 {
   WSPointCloudPtr cloud = viewer->LoadPointCloud(dir);
   if (!cloud)
     return;
 
-  std::vector<WSPointCloudPtr> segClouds;
-  PCLSegment segment(cloud);
-  bool success = segment.Compute(segClouds);
-  if (!success)
-    return;
-
-  std::cout << segClouds.size() << "segments" << std::endl;
-  for (int i = 0; i < segClouds.size(); ++i)
+  if (bbox.empty())
   {
-    WSPointCloudPtr segCloud = segClouds[i];
-    std::string file = dir+"segment_"+std::to_string(i)+".ply";
-    int res = pcl::io::savePLYFileASCII(file, *segCloud);
-    if (res >= 0)
-      std::cout << "save point cloud" << i << "as" << file << std::endl;
-  }
+    std::vector<WSPointCloudPtr> segClouds;
+    PCLSegment segment(cloud);
+    bool success = segment.Compute(segClouds);
+    if (!success)
+      return;
 
-  int vp = viewer->CreateViewPort(0,0,1,1);
-  viewer->AddPointCloud(cloud,vp);
+    std::cout << segClouds.size() << "segments" << std::endl;
+    for (int i = 0; i < segClouds.size(); ++i)
+    {
+      WSPointCloudPtr segCloud = segClouds[i];
+      std::string file = dir+"segment_"+std::to_string(i)+".ply";
+      int res = pcl::io::savePLYFileASCII(file, *segCloud);
+      if (res >= 0)
+        std::cout << "save point cloud" << i << "as" << file << std::endl;
+    }
+
+    int vp = viewer->CreateViewPort(0,0,1,1);
+    viewer->AddPointCloud(cloud,vp);
+
+  }
+  else
+  {
+    std::cout << "filter point cloud in bounding box" << bbox[0] << " "<< bbox[1]<< " "
+    << bbox[2]<< " " << bbox[3] << " "<< bbox[4] << " "<< bbox[5]<< std::endl;
+    PCLFilter filter;
+    cloud = filter.FilterPCLPointInBBox(cloud,bbox,bFilter);
+    int vp = viewer->CreateViewPort(0,0,1,1);
+    viewer->AddPointCloud(cloud,vp);
+  }
 }

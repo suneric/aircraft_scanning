@@ -138,13 +138,18 @@ namespace asv3d {
   // Octree representation of input point cloud
   class PCLOctree {
   public:
-    PCLOctree(const WSPointCloudPtr& cloud, double resolution);
+    PCLOctree(const WSPointCloudPtr& cloud, double resolution, const Eigen::Vector3f& refNormal, int minVoxelPts=5);
     PCLOctree(const PCLOctree& tree);
     PCLOctree& operator=(const PCLOctree& tree);
     ~PCLOctree();
 
     int TreeDepth() const {return m_os->getTreeDepth();}
     double Resolution() const {return m_os->getResolution();}
+
+    WSPointCloudPtr VoxelCentroidCloud() const;
+    WSPointCloudNormalPtr VoxelAverageNormals(const Eigen::Vector3f& refNormal) const;
+
+
 
     void FindOutsidePolygons(std::vector<WSPointCloudPtr>& outsidePolygons) const;
     void VoxelOutsideCenters(std::vector<VoxelNormals>& outsideNormals) const;
@@ -156,21 +161,20 @@ namespace asv3d {
     int VoxelIndices(std::vector<int>& indices) const;
     int VoxelIndex(const WSPoint& centroid) const;
 
-    int GetIntersectedVoxelCenters(const Eigen::Vector3f& point,
-                                   const Eigen::Vector3f& normal,
-                                   int max,
-                                   std::vector<WSPoint>& voxelCenters) const;
+    int IntersectedOccupiedVoxels(const Eigen::Vector3f& origin, const Eigen::Vector3f& end) const;
+
+    // int GetIntersectedVoxelCenters(const Eigen::Vector3f& point,
+    //                                const Eigen::Vector3f& normal,
+    //                                int max,
+    //                                std::vector<WSPoint>& voxelCenters) const;
 
     int BoxSearch(const Eigen::Vector3f& minPt,
                   const Eigen::Vector3f& maxPt,
                   std::vector<int> indices) const;
-
-    WSPointCloudPtr VoxelCentroidCloud() const;
-    WSPointCloudNormalPtr VoxelAverageNormals() const;
-
   private:
-    bool EvaluateVoxelNormal(const WSPointCloudPtr cloud, const WSPoint& point, WSNormal& normal) const;
-    int  IntersectedOccupiedVoxels(const Eigen::Vector3f& origin, const Eigen::Vector3f& end) const;
+    bool IsOutsideVoxel(const WSPoint& point, const Eigen::Vector3f& refNormal);
+    bool EvaluateVoxelNormal(const WSPointCloudPtr cloud, const WSPoint& point, WSNormal& normal, const Eigen::Vector3f& refNormal) const;
+
 
   private:
     OctreeSearch* m_os;

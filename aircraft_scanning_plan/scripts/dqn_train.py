@@ -33,13 +33,14 @@ def create_agent_params(name, state_dim, action_dim, layer_sizes, learning_rate,
     return params
 
 def create_trajectory(env, agent, dir, target, index):
-    state = env.state()
+    state = env.reset()
     done, coverage = False, 0
     while done == False and coverage < target:
-        digits = agent.qnet_active(state.reshape(1,-1))
+        vps = np.asarray(state.vpsState)
+        digits = agent.qnet_active(vps.reshape(1,-1))
         action = np.argmax(digits.numpy().flatten())
-        done, reward, coverage, nextState= env.play(action)
-        state = env.state()
+        vpIdx = state.neighbors()[action]
+        done, reward, coverage, state= env.play(vpIdx)
     file = "trajecoty_"+str(index)+".txt"
     env.save(os.path.join(dir,file))
     print("save trajectory to ", os.path.join(dir,file))
@@ -73,7 +74,7 @@ if __name__ == "__main__":
 
     # learning
     step = 0
-    ep = 1
+    ep = 0
     while ep <= args.ep:
         epsilon = agent.decay_epsilon(ep,decay_rate,1.0,0.1,1)
         state = env.reset()
@@ -103,7 +104,7 @@ if __name__ == "__main__":
         tf.summary.scalar("total reward", sum(rewards), step=ep)
         tf.summary.scalar("visited vps", vpCount, step=ep)
         if not ep%1000: # save trajectory every 1000 episodes
-            create_trajectory(env, agent, output_dir, ep)
+            create_trajectory(env, agent, output_dir, target_coverage,ep)
         ep+=1
 
     end_time = time.time()

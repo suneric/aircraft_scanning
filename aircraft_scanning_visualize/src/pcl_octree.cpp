@@ -9,7 +9,7 @@
 
 using namespace asv3d;
 
-PCLOctree::PCLOctree(const WSPointCloudPtr& cloud, double resolution)
+PCLOctree::PCLOctree(const WSPointCloudPtr& cloud, double resolution, const Eigen::Vector3f& refNormal, int minVoxelPts)
 {
   // define a octree search
   m_cloud = cloud;
@@ -19,24 +19,29 @@ PCLOctree::PCLOctree(const WSPointCloudPtr& cloud, double resolution)
   m_os->addPointsFromInputCloud();
 
   // get occupied voxel centroids
-  m_centroidCloud = nullptr;
   m_voxelMap.Clear();
 
   pcl::octree::OctreePointCloud<WSPoint>::AlignedPointTVector centroids;
   int nVoxel = m_os->getOccupiedVoxelCenters(centroids);
-  if (nVoxel > 0)
+  double voxelSideLen = VoxelSideLength();
+  for (int i = 0; i < nVoxel; ++i)
   {
-    double voxelSideLen = VoxelSideLength();
-    WSPointCloudPtr voxelCloud(new WSPointCloud);
-    voxelCloud->points.resize(nVoxel);
-    for (int i = 0; i < nVoxel; ++i)
+    WSPoint center = centroids[i];
+    std::vector<int> voxelIndices;
+    if (m_os->voxelSearch(center,voxelIndices) && voxelIndices.size() >= minVoxelPts)
     {
-      voxelCloud->points[i] = centroids[i];
-      m_voxelMap.AddVoxel(voxelCloud->points[i],voxelSideLen);
+      if (IsOutsideVoxel(center,refNormal))
+        m_voxelMap.AddVoxel(center,voxelSideLen);
     }
-
-    m_centroidCloud = voxelCloud;
   }
+
+  std::vector<int> indices;
+  int size = m_voxelMap.VoxelIndices(indices);
+  WSPointCloudPtr voxelCloud(new WSPointCloud);
+  voxelCloud->points.resize(size);
+  for (int i = 0; i < size; ++i)
+    voxelCloud->points[i] = m_voxelMap.GetVoxelCentroid(i);
+  m_centroidCloud = voxelCloud;
 }
 
 PCLOctree::~PCLOctree()
@@ -73,7 +78,8 @@ double PCLOctree::VoxelSideLength() const
 
 int PCLOctree::VoxelCount() const
 {
-  return static_cast<int>(m_centroidCloud->points.size());
+  std::vector<int> vxIndices;
+  return VoxelIndices(vxIndices);
 }
 
 int PCLOctree::VoxelIndices(std::vector<int>& indices) const
@@ -91,19 +97,21 @@ WSPointCloudPtr PCLOctree::VoxelCentroidCloud() const
   return m_centroidCloud;
 }
 
-WSPointCloudNormalPtr PCLOctree::VoxelAverageNormals() const
+WSPointCloudNormalPtr PCLOctree::VoxelAverageNormals(const Eigen::Vector3f& refNormal) const
 {
   if (nullptr == m_centroidCloud)
     return nullptr;
 
+  std::vector<int> voxelIndices;
+  int nVoxel = m_voxelMap.VoxelIndices(voxelIndices);
+
   WSPointCloudNormalPtr normals(new WSPointCloudNormal);
-  int nVoxel = m_centroidCloud->points.size();
   normals->points.resize(nVoxel);
   for (int i = 0; i < nVoxel; ++i)
   {
-    WSPoint point = m_centroidCloud->points[i];
+    WSPoint point = m_voxelMap.GetVoxelCentroid(i);
     WSNormal normal;
-    EvaluateVoxelNormal(m_cloud, point, normal);
+    EvaluateVoxelNormal(m_cloud, point, normal, refNormal);
     normals->points[i].normal_x = normal.normal_x;
     normals->points[i].normal_y = normal.normal_y;
     normals->points[i].normal_z = normal.normal_z;
@@ -113,46 +121,35 @@ WSPointCloudNormalPtr PCLOctree::VoxelAverageNormals() const
 }
 
 // evaluete average voxel normal, return if fliped
-bool PCLOctree::EvaluateVoxelNormal(const WSPointCloudPtr cloud, const WSPoint& point, WSNormal& normal) const
+bool PCLOctree::EvaluateVoxelNormal(const WSPointCloudPtr cloud, const WSPoint& point, WSNormal& normal, const Eigen::Vector3f& refNormal) const
 {
   bool bFlip = false;
   std::vector<int> voxelIndices;
   if (m_os->voxelSearch(point,voxelIndices))
   {
-    // find a all point groued in the voxel and evaluate point normals
+    // find a all point grouped in the voxel and evaluate point normals
+    WSPointCloudNormalPtr normals(new WSPointCloudNormal);
+
     PCLFilter filter;
     WSPointCloudPtr groupPt = filter.ExtractPoints(cloud,voxelIndices);
-    WSPointCloudNormalPtr normals(new WSPointCloudNormal);
     pcl::NormalEstimation<WSPoint, WSNormal> ne;
     pcl::search::KdTree<WSPoint>::Ptr tree(new pcl::search::KdTree<WSPoint>());
     ne.setSearchMethod(tree);
     ne.setInputCloud(groupPt);
-    ne.setKSearch(30);
+    ne.setKSearch(10);
     ne.compute(*normals);
 
-    // average normal
+    // find average normal for the voxel
+    Eigen::Vector3f vec(0,0,0);
     size_t num = normals->points.size();
-    double nx=0.0,ny=0.0,nz=0.0;
     for (size_t i = 0; i < num; ++i)
     {
       WSNormal normal = normals->points[i];
-      Eigen::Vector3f nmVec(normal.normal_x, normal.normal_y, normal.normal_z);
-      Eigen::Vector3f nmUnit = nmVec.normalized();
-      nx += nmUnit.x();
-      ny += nmUnit.y();
-      nz += nmUnit.z();
+      vec += Eigen::Vector3f(normal.normal_x, normal.normal_y, normal.normal_z);
     }
-    nx /= num;
-    ny /= num;
-    nz /= num;
-
-    // flip normal based on voxel intersection
-    Eigen::Vector3f pt(point.x,point.y,point.z);
-    Eigen::Vector3f nm(nx,ny,nz);
-    std::vector<int> intersectIndices;
-    int nIntersectPositive = m_os->getIntersectedVoxelIndices(pt,nm,intersectIndices);
-    int nInterSectNegative = m_os->getIntersectedVoxelIndices(pt,-nm,intersectIndices);
-    if (nIntersectPositive > 1 && nInterSectNegative == 1)
+    //std::cout << "normal vector " << num << " " << vec.x() << " " << vec.y() << " " << vec.z() << std::endl;
+    Eigen::Vector3f nm = (vec/num).normalized();
+    if (nm.dot(refNormal) < 0.0) // normal angle > M_PI/2
     {
       nm = -nm;
       bFlip = true;
@@ -168,16 +165,44 @@ bool PCLOctree::EvaluateVoxelNormal(const WSPointCloudPtr cloud, const WSPoint& 
   return bFlip;
 }
 
-int PCLOctree::GetIntersectedVoxelCenters(const Eigen::Vector3f& point,
-                                          const Eigen::Vector3f& normal,
-                                          int max,
-                                          std::vector<WSPoint>& voxelCenters) const
+bool PCLOctree::IsOutsideVoxel(const WSPoint& point, const Eigen::Vector3f& refNormal)
 {
-  pcl::octree::OctreePointCloud<WSPoint>::AlignedPointTVector intersects;
-  int nRes = m_os->getIntersectedVoxelCenters(point, normal, intersects, max);
-  voxelCenters.assign(intersects.begin(), intersects.end());
-  return nRes;
+  int outsideSize = 0;
+  double halfVLen = 0.5*m_os->getVoxelSquaredSideLen();
+  Eigen::Vector3f c(point.x,point.y,point.z);
+  // x direction
+  std::vector<Eigen::Vector3f> checkPoints;
+  checkPoints.push_back(Eigen::Vector3f(c.x()-2*halfVLen,c.y(),c.z()));
+  checkPoints.push_back(Eigen::Vector3f(c.x()+2*halfVLen,c.y(),c.z()));
+  checkPoints.push_back(Eigen::Vector3f(c.x(),c.y()-2*halfVLen,c.z()));
+  checkPoints.push_back(Eigen::Vector3f(c.x(),c.y()+2*halfVLen,c.z()));
+  checkPoints.push_back(Eigen::Vector3f(c.x(),c.y(),c.z()-2*halfVLen));
+  checkPoints.push_back(Eigen::Vector3f(c.x(),c.y(),c.z()+2*halfVLen));
+  for (int i = 0; i < checkPoints.size(); ++i)
+  {
+    if (refNormal.dot(checkPoints[i]) >= 0.0)
+    {
+      int nInterSectVoxel = IntersectedOccupiedVoxels(c,checkPoints[i]);
+      if (nInterSectVoxel == 1)
+        outsideSize++;
+    }
+  }
+
+  return outsideSize > 0;
 }
+
+
+// int PCLOctree::GetIntersectedVoxelCenters(const Eigen::Vector3f& point,
+//                                           const Eigen::Vector3f& normal,
+//                                           int max,
+//                                           std::vector<WSPoint>& voxelCenters) const
+// {
+//   pcl::octree::OctreePointCloud<WSPoint>::AlignedPointTVector intersects;
+//   int nRes = m_os->getIntersectedVoxelCenters(point, normal, intersects, max);
+//   // std::cout << "view voxel intersets " << nRes << std::endl;
+//   voxelCenters.assign(intersects.begin(), intersects.end());
+//   return nRes;
+// }
 
 int PCLOctree::BoxSearch(const Eigen::Vector3f& minPt,
               const Eigen::Vector3f& maxPt,

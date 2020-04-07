@@ -11,20 +11,31 @@ class ScanningUtil(object):
         self.viewpoints = [] # viewpoint
         self.voxels = [] # voxel indices
         self.action_dim = action_dim # -1 means no limited
+        self.neighborMap = []
 
-    def neighbors(self, vpIdx, vpsState):
+    def neighbors(self,vpIdx):
+        return self.neighborMap[vpIdx]
+
+    def _build_neighbor_map(self):
+        map = []
+        for i in range(len(self.viewpoints)):
+            neighbors = self._search_neighbors(i)
+            map.append(neighbors)
+            #print(i, neighbors)
+        return map
+
+    def _search_neighbors(self, vpIdx):
         # rule 1 find neighbors in unvisited vps
         # rule 2 find neighbors with smallest overlap
         # rule 3 find neighbors with shortest distance
         vp = self.viewpoints[vpIdx]
         view = vp.view()
-        unvisited = np.where(np.asarray(vpsState) == 0)[0]
-        if len(unvisited) <= self.action_dim:
-            return unvisited
-
+        vps_search = [i for i in range(len(self.viewpoints))]
         overlapList, unoverlapList = [],[]
         overlapValues, unoverlapDist = [],[]
-        for i in unvisited:
+        for i in vps_search:
+            if i == vpIdx:
+                continue
             vpi = self.viewpoints[i]
             viewi = vpi.view()
             common = list(set(view) & set(viewi))
@@ -37,20 +48,43 @@ class ScanningUtil(object):
                 unoverlapDist.append(self.distance_i(vpIdx,i))
 
         neighbors = []
-        if len(overlapList) >= self.action_dim:
-            for i in range(self.action_dim):
-                idx = np.argmin(overlapValues)
-                neighbors.append(overlapList[idx])
-                del overlapList[idx]
-                del overlapValues[idx]
-        else:
-            neighbors = overlapList[:]
-            for i in range(len(overlapList)-1,self.action_dim):
-                idx = np.argmin(unoverlapDist)
-                neighbors.append(unoverlapList[idx])
-                del unoverlapList[idx]
-                del unoverlapDist[idx]
+        size = self.action_dim
+        overlapSize = len(overlapList)
+        if overlapSize >= size:
+            neighbors[0:size]=self.getMinValues(overlapList,overlapValues,size)[:]
+        elif overlapSize < size and overlapSize > 0:
+            neighbors[0:overlapSize]=self.getMinValues(overlapList,overlapValues,overlapSize)[:]
+            neighbors[overlapSize:size]=self.getMinValues(unoverlapList,unoverlapDist,size-overlapSize)[:]
+        elif overlapSize == 0:
+            neighbors[0:size] = self.getMinValues(unoverlapList,unoverlapDist,size)[:]
+        # half of the neighbors are overlapped vp and largest distance
+        # size = int(0.5*self.action_dim)
+        # if len(overlapList) >= size and len(unoverlapList) >= size:
+        #     neighbors[0:size] = self.getMinValues(overlapList,overlapValues,size)[:]
+        #     neighbors[size:2*size] = self.getMinValues(unoverlapList,unoverlapDist,size)[:]
+        # elif len(overlapList) >= size and len(unoverlapList) < size:
+        #     minSize = len(unoverlapList)
+        #     neighbors[0:2*size-minSize] = self.getMinValues(overlapList,overlapValues,2*size-minSize)[:]
+        #     neighbors[2*size-minSize:2*size] = self.getMinValues(unoverlapList,unoverlapDist,minSize)[:]
+        # elif len(overlapList) < size and len(unoverlapList) >= size:
+        #     minSize = len(overlapList)
+        #     neighbors[0:minSize] = self.getMinValues(overlapList,overlapValues,minSize)[:]
+        #     neighbors[minSize:2*size] = self.getMinValues(unoverlapList,unoverlapDist,2*size-minSize)[:]
+        #print(neighbors)
         return neighbors
+
+    def getMinValues(self, itemList, valueList, size):
+        if (len(itemList) == size):
+            return itemList
+        else:
+            minValueItem = []
+            for _ in range(size):
+                idx = np.argmin(valueList)
+                minValueItem.append(itemList[idx])
+                del itemList[idx]
+                del valueList[idx]
+            return minValueItem
+
 
     def nearest(self, vp):
         distList = [self.distance(vp,self.viewpoints[i]) for i in range(len(self.viewpoints))]
@@ -95,6 +129,7 @@ class ScanningUtil(object):
                 self.viewpoints.append(vp)
         reader.close()
         print("viewpoints count:", len(self.viewpoints), "voxels count:", len(self.voxels))
+        self.neighborMap = self._build_neighbor_map()
 
     # save trajectory
     def save(self,trajectory,file):

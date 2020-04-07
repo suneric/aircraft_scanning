@@ -8,20 +8,32 @@ from viewpoint_map import ViewPoint, ViewPointMap
 from viewpoint_util import ScanningUtil
 
 class UAVScanningState(object):
-    def __init__(self,util,vpIdx,vpsState,vxsState):
+    def __init__(self,util,vpIdx,vpsState,vxsState,travel):
         self.util = util
         self.vpIdx = vpIdx
         self.vpsState = vpsState
         self.vxsState = vxsState
-        self.vpsNeighbor = self.util.neighbors(self.vpIdx,self.vpsState)
+        self.vpsNeighbor = self.util.neighbors(self.vpIdx)
+        self.travel = travel
 
     # current viewpoint index
+    def travel_distance(self):
+        return self.travel
+
     def vp(self):
         return self.vpIdx
 
     # current viewpoint neighbor indices
     def neighbors(self):
         return self.vpsNeighbor
+        
+    def unvisited_neighbors(self):
+        unvisited = []
+        for v in self.vpsNeighbor:
+            if self.vpsState[v] == 0:
+                unvisited.append(v)
+        #print("unvisited",self.vpIdx,len(unvisited),len(self.vpsNeighbor),unvisited)
+        return unvisited
 
     def coverage(self):
         visited = np.asarray(np.nonzero(self.vxsState)).flatten()
@@ -39,7 +51,8 @@ class UAVScanningState(object):
         for v in voxels:
             vxsState[v] = 1
 
-        return UAVScanningState(self.util,vpIdx,vpsState,vxsState)
+        dist = self.travel+self.util.distance_i(self.vpIdx, vpIdx)
+        return UAVScanningState(self.util,vpIdx,vpsState,vxsState,dist)
 
 # envrionment
 class UAVScanningEnv(object):
@@ -58,11 +71,15 @@ class UAVScanningEnv(object):
 
     def reset(self):
         self.visited_vps = []
-        vpsState = [0 for i in range(len(self.util.viewpoints))]
-        vxsState = [0 for i in range(len(self.util.voxels))]
-        state = UAVScanningState(self.util,-1,vpsState,vxsState)
         vpIdx = self.util.nearest(self.start_vp)
-        self.state = state.move(vpIdx)
+        vpsState = [0 for i in range(len(self.util.viewpoints))]
+        vpsState[vpIdx] = 1
+        vxsState = [0 for i in range(len(self.util.voxels))]
+        vp = self.util.viewpoints[vpIdx]
+        voxels = vp.view()
+        for v in voxels:
+            vxsState[v] = 1
+        self.state = UAVScanningState(self.util,vpIdx,vpsState,vxsState,0)
         self.visited_vps.append(vpIdx)
         return self.state
 

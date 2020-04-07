@@ -7,6 +7,7 @@ namespace asv3d {
 
   class PCLFilter {
     public:
+      WSPointCloudPtr FilterPCLPointInBBox(const WSPointCloudPtr cloud, const std::vector<double>& bbox, bool bFilter);
       WSPointCloudPtr FilterPCLPoint(const WSPointCloudPtr cloud, float leafSize);
       WSPointCloudPtr FilterPassThrough(const WSPointCloudPtr cloud, const std::string& field, double limit_min, double limit_max);
       WSPointCloudPtr FilterPCLPointSOR(const WSPointCloudPtr cloud, int neighbor, float thresh);

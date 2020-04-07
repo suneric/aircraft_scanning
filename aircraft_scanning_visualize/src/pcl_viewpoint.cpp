@@ -9,30 +9,158 @@
 
 using namespace asv3d;
 
+void PCLViewPoint::GenerateCameraPositions(
+  const PCLOctree& tree,
+  double distance,
+  const Eigen::Vector3f& refNormal,
+  std::vector<Eigen::Affine3f>& cameras,
+  std::vector<ViewPoint>& vps,
+  int type)
+{
+  if (type == 0)
+    CameraPositionWithVoxelAverageNormal(tree, distance,refNormal,cameras,vps);
+  // else
+  //   CameraPositionWithVoxelCube(tree, distance, cameras);
+}
+
+void PCLViewPoint::CameraPositionWithVoxelAverageNormal(
+  const PCLOctree& tree,
+  double distance,
+  const Eigen::Vector3f& refNormal,
+  std::vector<Eigen::Affine3f>& cameras,
+  std::vector<ViewPoint>& vps)
+{
+  WSPointCloudPtr vCloud = tree.VoxelCentroidCloud();
+  WSPointCloudNormalPtr vNormal = tree.VoxelAverageNormals(refNormal);
+  for (size_t i = 0; i < vCloud->points.size(); ++i)
+  {
+    Eigen::Vector3f point(vCloud->points[i].x, vCloud->points[i].y, vCloud->points[i].z);
+    Eigen::Vector3f nm(vNormal->points[i].normal_x, vNormal->points[i].normal_y, vNormal->points[i].normal_z);
+    Eigen::Affine3f camera;
+    ViewPoint vp;
+    if (CameraPosition(tree,point,nm,distance,camera,vp))
+    {
+      cameras.push_back(camera);
+      vps.push_back(vp);
+    }
+  }
+}
+
+bool PCLViewPoint::CameraPosition(const PCLOctree& tree,
+                    const Eigen::Vector3f& target,
+                    const Eigen::Vector3f& normal,
+                    double distance,
+                    Eigen::Affine3f& camera,
+                    ViewPoint& vp)
+{
+  bool bOk = true;
+  Eigen::Vector3f nm = normal.normalized();
+  Eigen::Vector3f pt = target + distance*nm;
+  double alpha = 0.0, beta = 0.0; // yaw and pitch
+  camera = CameraPose(pt,-nm, alpha, beta);
+  vp = CreateViewPoint(camera,alpha,beta);
+  return bOk;
+}
+
+ViewPoint PCLViewPoint::CreateViewPoint(const Eigen::Affine3f& camera,double alpha,double beta)
+{
+  Eigen::Matrix4f mat = camera.matrix();
+  Eigen::Vector3f center(mat(0,3),mat(1,3),mat(2,3));
+  Eigen::Matrix4f quadrotor;
+  quadrotor(0,0) = cos(alpha);
+  quadrotor(0,1) = -sin(alpha);
+  quadrotor(0,2) = 0;
+  quadrotor(0,3) = center.x()-0.4558*cos(alpha);
+  quadrotor(1,0) = sin(alpha);
+  quadrotor(1,1) = cos(alpha);
+  quadrotor(1,2) = 0;
+  quadrotor(1,3) = center.y()-0.4558*sin(alpha);
+  quadrotor(2,0) = 0;
+  quadrotor(2,1) = 0;
+  quadrotor(2,2) = 1;
+  quadrotor(2,3) = center.z();
+  quadrotor(3,0) = 0;
+  quadrotor(3,1) = 0;
+  quadrotor(3,2) = 0;
+  quadrotor(3,3) = 1;
+  Cartesion quadPose;
+  Matrix2Cartesion(quadrotor, quadPose);
+  ViewPoint vp;
+  vp.quadrotor_pose = quadPose;
+  vp.camera_angle = beta;
+  return vp;
+}
+
+void PCLViewPoint::Matrix2Cartesion(const Eigen::Matrix4f& mat, Cartesion& quadPose)
+{
+  Eigen::Matrix3f affine = mat.topLeftCorner(3,3);
+  Eigen::Quaternionf q(affine);
+  quadPose.pos_x = mat(0,3);
+  quadPose.pos_y = mat(1,3);
+  quadPose.pos_z = mat(2,3);
+  quadPose.ori_w = q.w();
+  quadPose.ori_x = q.x();
+  quadPose.ori_y = q.y();
+  quadPose.ori_z = q.z();
+}
+
+// give a position of camera and the direction of camera facing
+// calculate the orientation of camera
+// given the condition that rolling of camera is 0 as uav is hovering
+Eigen::Affine3f PCLViewPoint::CameraPose(const Eigen::Vector3f& center,
+                                         const Eigen::Vector3f& normal,
+                                         double& alpha,double& beta)
+{
+  Eigen::Vector3f nm = normal.normalized();
+  beta = acos(nm.z())-M_PI/2;
+  alpha = 0.0;
+  if (nm.x() != 0)
+    alpha = atan2(nm.y(),nm.x());
+
+  Eigen::Matrix4f mat;
+  mat(0,0) = sin(alpha);
+  mat(0,1) = cos(alpha)*cos(beta+M_PI/2);
+  mat(0,2) = cos(alpha)*sin(beta+M_PI/2);
+  mat(0,3) = center.x();
+  mat(1,0) = -cos(alpha);
+  mat(1,1) = sin(alpha)*cos(beta+M_PI/2);
+  mat(1,2) = sin(alpha)*sin(beta+M_PI/2);
+  mat(1,3) = center.y();
+  mat(2,0) = 0;
+  mat(2,1) = -sin(beta+M_PI/2);
+  mat(2,2) = cos(beta+M_PI/2);
+  mat(2,3) = center.z();
+  mat(3,0) = 0;
+  mat(3,1) = 0;
+  mat(3,2) = 0;
+  mat(3,3) = 1;
+  Eigen::Affine3f res;
+  res.matrix() = mat;
+  return res;
+}
+
 WSPointCloudPtr PCLViewPoint::CameraViewVoxels(const PCLOctree& tree, const Eigen::Affine3f& camera, std::vector<int>& voxelIndices)
 {
-  WSPointCloudPtr viewCloud(new WSPointCloud);
   Eigen::Matrix4f camMatrix = camera.matrix();
   Eigen::Vector3f cameraPt(camMatrix(0,3),camMatrix(1,3),camMatrix(2,3));
-  if(FrustumCulling(tree.VoxelCentroidCloud(),camera.matrix(),68,42,0.1,10.0,viewCloud))
+  // get voxels in camera frustum culling
+  WSPointCloudPtr viewCloud(new WSPointCloud);
+  if(FrustumCulling(tree.VoxelCentroidCloud(),camera.matrix(),68,42,0.1,5.0,viewCloud))
   {
     std::vector<WSPoint> visibleVoxels;
     for (int i = 0; i < viewCloud->points.size(); ++i)
     {
-      WSPoint centroid = viewCloud->points[i];
-      Eigen::Vector3f endPt(centroid.x, centroid.y, centroid.z);
-      std::vector<WSPoint> intesects;
-      // get outer side voxels, with max intersected voxel number is 1
-      int nRes = tree.GetIntersectedVoxelCenters(cameraPt, endPt-cameraPt, 1, intesects);
-      if (nRes == 1)
-        visibleVoxels.push_back(intesects[0]);
+      WSPoint c = viewCloud->points[i];
+      if (IsVisibleVoxel(tree,cameraPt,Eigen::Vector3f(c.x,c.y,c.z)))
+        visibleVoxels.push_back(c);
     }
+
     // voxel index
     std::vector<WSPoint> visibleCentroids;
     for (size_t i = 0; i < visibleVoxels.size(); ++i)
     {
       int voxelIndex = tree.VoxelIndex(visibleVoxels[i]);
-      if (std::find(voxelIndices.begin(), voxelIndices.end(),voxelIndex) == voxelIndices.end())
+      if (std::find(voxelIndices.begin(),voxelIndices.end(),voxelIndex) == voxelIndices.end())
       {
         voxelIndices.push_back(voxelIndex);
         visibleCentroids.push_back(visibleVoxels[i]);
@@ -44,132 +172,74 @@ WSPointCloudPtr PCLViewPoint::CameraViewVoxels(const PCLOctree& tree, const Eige
     visibleVoxelCloud->points.assign(visibleCentroids.begin(), visibleCentroids.end());
     return visibleVoxelCloud;
   }
-  return nullptr;
-}
-
-void PCLViewPoint::GenerateCameraPositions(const PCLOctree& tree,double distance,std::vector<Eigen::Affine3f>& cameras, std::vector<ViewPoint>& vps, int type)
-{
-  if (type == 0)
-    CameraPositionWithVoxelAverageNormal(tree, distance, cameras, vps);
   else
-    CameraPositionWithVoxelCube(tree, distance, cameras, vps);
-}
-
-void PCLViewPoint::CameraPositionWithVoxelCube(const PCLOctree& tree, double distance, std::vector<Eigen::Affine3f>& cameras, std::vector<ViewPoint>& vps)
-{
-  std::vector<VoxelNormals> voCenters;
-  tree.VoxelOutsideCenters(voCenters);
-  std::cout << "voxel outside " << voCenters.size() << std::endl;
-  double minDist = tree.Resolution();
-  double maxDist = distance;
-  for (int i = 0; i < voCenters.size(); ++i)
   {
-    Eigen::Vector3f center = voCenters[i].first;
-    std::vector<Eigen::Vector3f> ops = voCenters[i].second;
-    for (size_t j = 0; j < ops.size(); ++j)
-    {
-      Eigen::Vector3f nm = ops[j]-center;
-      Eigen::Affine3f camera;
-      ViewPoint vp;
-      if (CameraPosition(tree, center, nm, minDist, maxDist, camera, vp))
-      {
-        cameras.push_back(camera);
-        vps.push_back(vp);
-      }
-    }
-
-    // extra normals
-    if (ops.size() > 1)
-    {
-      double nx=0.0,ny=0.0,nz=0.0;
-      int num = ops.size();
-      for (size_t j = 0; j < num; ++j)
-      {
-        Eigen::Vector3f nm = (ops[j]-center).normalized();
-        nx += nm.x();
-        ny += nm.y();
-        nz += nm.z();
-      }
-      nx /= num;
-      ny /= num;
-      nz /= num;
-
-      Eigen::Vector3f anm(nx,ny,nz);
-      Eigen::Affine3f camera;
-      ViewPoint vp;
-      if (CameraPosition(tree, center, anm, minDist, maxDist, camera, vp))
-      {
-        cameras.push_back(camera);
-        vps.push_back(vp);
-      }
-    }
+    std::cout << "no voxels in camera view" << std::endl;
+    return nullptr;
   }
 }
 
-void PCLViewPoint::CameraPositionWithVoxelAverageNormal(const PCLOctree& tree, double distance, std::vector<Eigen::Affine3f>& cameras, std::vector<ViewPoint>& vps)
+// check if voxel is blocked by other voxel in the view with checking all of its side
+bool PCLViewPoint::IsVisibleVoxel(const PCLOctree& tree, const Eigen::Vector3f& camera, const Eigen::Vector3f& c)
 {
-  WSPointCloudPtr vCloud = tree.VoxelCentroidCloud();
-  WSPointCloudNormalPtr vNormal = tree.VoxelAverageNormals();
-  // find all camera poses
-  for (size_t i = 0; i < vCloud->points.size(); ++i)
+  int visibleSide = 0;
+  double halfVLen = 0.5*tree.VoxelSideLength();
+  std::vector<Eigen::Vector3f> checkPoints;
+  checkPoints.push_back(Eigen::Vector3f(c.x()-halfVLen,c.y(),c.z()));
+  checkPoints.push_back(Eigen::Vector3f(c.x()+halfVLen,c.y(),c.z()));
+  checkPoints.push_back(Eigen::Vector3f(c.x(),c.y()-halfVLen,c.z()));
+  checkPoints.push_back(Eigen::Vector3f(c.x(),c.y()+halfVLen,c.z()));
+  checkPoints.push_back(Eigen::Vector3f(c.x(),c.y(),c.z()-halfVLen));
+  checkPoints.push_back(Eigen::Vector3f(c.x(),c.y(),c.z()+halfVLen));
+  for (int i = 0; i < checkPoints.size(); ++i)
   {
-    Eigen::Vector3f point(vCloud->points[i].x, vCloud->points[i].y, vCloud->points[i].z);
-    Eigen::Vector3f nm(vNormal->points[i].normal_x, vNormal->points[i].normal_y, vNormal->points[i].normal_z);
-    Eigen::Affine3f camera;
-    ViewPoint vp;
-    if (CameraPosition(tree,point, nm, tree.Resolution(), distance, camera,vp))
-    {
-      cameras.push_back(camera);
-      vps.push_back(vp);
-    }
+    std::vector<WSPoint> intesects;
+    int nRes = tree.IntersectedOccupiedVoxels(camera, c);
+    //std::cout << "intersects " << nRes << std::endl;
+    if (nRes <= 2) // consider the two voxel share the same edge
+      visibleSide++;
   }
+  //std::cout << "visible side " << visibleSide << std::endl;
+  return visibleSide > 0;
 }
 
-bool PCLViewPoint::CameraPosition(const PCLOctree& tree,
-                    const Eigen::Vector3f& target,
-                    const Eigen::Vector3f& normal,
-                    double distMin, double distMax,
-                    Eigen::Affine3f& camera,
-                    ViewPoint& vp)
+bool PCLViewPoint::FrustumCulling(const WSPointCloudPtr cloud,
+                               const Eigen::Matrix4f& cpose,
+                               float hfov, float vfov,
+                               float ndist, float fdist,
+                               WSPointCloudPtr viewCloud)
 {
-  bool bOk = true;
-  double distance = distMax;
-  Eigen::Vector3f nm = normal.normalized();
-  Eigen::Vector3f pt = target + distance*nm;
-  camera = CameraPose(pt,-nm);
-  while (FilterViewPoint(tree,camera,vp))
-  {
-    distance = distance - 0.1;
-    if (distance > distMin)
-    {
-      pt = target + distance*nm;
-      camera = CameraPose(pt,-nm);
-    }
-    else
-    {
-      bOk = false;
-      break;
-    }
-  }
-  return bOk;
+  if (cloud == nullptr)
+    return false;
+
+  Eigen::Matrix4f poseNew = CameraPoseTransform(cpose);
+  // frustum culling
+  pcl::FrustumCulling<WSPoint> fc;
+  fc.setInputCloud(cloud);
+  fc.setCameraPose(poseNew);
+  fc.setHorizontalFOV(hfov); // degree
+  fc.setVerticalFOV(vfov); // degree
+  fc.setNearPlaneDistance(ndist);
+  fc.setFarPlaneDistance(fdist);
+  fc.filter(*viewCloud);
+  return true;
 }
 
-bool PCLViewPoint::FilterViewPoint(const PCLOctree& tree, const Eigen::Affine3f& camera, ViewPoint& vp)
+bool PCLViewPoint::FilterViewPoint(const PCLOctree& tree, const Eigen::Affine3f& camera, const ViewPoint& vp)
 {
-  vp = CreateViewPoint(camera);
-
   double qr_x = vp.quadrotor_pose.pos_x;
   double qr_y = vp.quadrotor_pose.pos_y;
   double qr_z = vp.quadrotor_pose.pos_z;
   // height limitation
-  if (qr_z < 6.0)
-  {
+  if (qr_z < 3)
     return true;
-  }
 
-  if (qr_x < 3 && qr_x >-3)
+  if (qr_x < 2.5 && qr_x > -2.5)
   {
-    if (qr_z < 6 || qr_y <-7 || qr_y > 2)
+    if (qr_y > 7 || qr_y < -7)
+      return true;
+
+    if (qr_z < 7)
       return true;
   }
 
@@ -178,23 +248,81 @@ bool PCLViewPoint::FilterViewPoint(const PCLOctree& tree, const Eigen::Affine3f&
   Eigen::Vector3f maxPt(qr_x+0.5, qr_y+0.5, qr_z+0.05);
   std::vector<int> intersets;
   if (tree.BoxSearch(minPt, maxPt, intersets) > 0)
-  {
-    // std::cout << intersets.size() << " filtered by collsion."<< std::endl;
     return true;
-  }
 
   // no point in view frustum
   WSPointCloudPtr viewCloud(new WSPointCloud);
   WSPointCloudPtr vCloud = tree.VoxelCentroidCloud();
   FrustumCulling(vCloud,camera.matrix(),68,42,0.1,10.0,viewCloud);
   if (viewCloud->points.size() == 0)
-  {
-    // std::cout << " filtered by null view in frustum."<< std::endl;
     return true;
-  }
 
   return false;
 }
+
+// This assume a coordinate system where X is forward, Y is up and Z is right.
+// to convert from the traditional camera coordinate syste (X is right, Y is down, Z forward)
+// [0,0,1,0
+//  0,-1,0,0
+//  1,0,0,0
+//  0,0,0,1]
+Eigen::Matrix4f PCLViewPoint::CameraPoseTransform(const Eigen::Matrix4f& mat)
+{
+  Eigen::Matrix4f cam2rot;
+  cam2rot(0,0) = 0;
+  cam2rot(0,1) = 0;
+  cam2rot(0,2) = 1;
+  cam2rot(0,3) = 0;
+  cam2rot(1,0) = 0;
+  cam2rot(1,1) = -1;
+  cam2rot(1,2) = 0;
+  cam2rot(1,3) = 0;
+  cam2rot(2,0) = 1;
+  cam2rot(2,1) = 0;
+  cam2rot(2,2) = 0;
+  cam2rot(2,3) = 0;
+  cam2rot(3,0) = 0;
+  cam2rot(3,1) = 0;
+  cam2rot(3,2) = 0;
+  cam2rot(3,3) = 1;
+  return mat*cam2rot;
+}
+
+// void PCLViewPoint::CameraPositionWithVoxelCube(const PCLOctree& tree, double distance, std::vector<Eigen::Affine3f>& cameras)
+// {
+//   std::vector<VoxelNormals> voCenters;
+//   tree.VoxelOutsideCenters(voCenters);
+//   std::cout << "voxel outside " << voCenters.size() << std::endl;
+//   for (int i = 0; i < voCenters.size(); ++i)
+//   {
+//     Eigen::Vector3f center = voCenters[i].first;
+//     std::vector<Eigen::Vector3f> ops = voCenters[i].second;
+//     for (size_t j = 0; j < ops.size(); ++j)
+//     {
+//       Eigen::Vector3f nm = ops[j]-center;
+//       Eigen::Affine3f camera;
+//       ViewPoint vp;
+//       if (CameraPosition(tree, center, nm, distance, camera))
+//       {
+//         cameras.push_back(camera);
+//       }
+//     }
+//
+//     // extra normals
+//     if (ops.size() > 1)
+//     {
+//       double nx=0.0,ny=0.0,nz=0.0;
+//       int num = ops.size();
+//       Eigen::Vector3f nm(0,0,0);
+//       for (size_t j = 0; j < num; ++j)
+//         nm += Eigen::Vector3f(ops[j]-center).normalized();
+//       Eigen::Vector3f anm = nm/num;
+//       Eigen::Affine3f camera;
+//       if (CameraPosition(tree, center, anm, distance, camera))
+//         cameras.push_back(camera);
+//     }
+//   }
+// }
 
 Eigen::Affine3f PCLViewPoint::ViewPoint2CameraPose(const ViewPoint& vp)
 {
@@ -221,24 +349,6 @@ Eigen::Affine3f PCLViewPoint::ViewPoint2CameraPose(const ViewPoint& vp)
   res.matrix() = camera_pose;
 
   return res;
-}
-
-ViewPoint PCLViewPoint::CreateViewPoint(const Eigen::Affine3f& camera)
-{
-  Eigen::Matrix4f mat = camera.matrix();
-  Eigen::Matrix3f affine = mat.topLeftCorner(3,3);
-  Eigen::Quaternionf orientation(affine);
-  double yaw =0,pitch=0,roll=0;
-  Quaternion2EularAngles(orientation,yaw,pitch,roll);
-  // std::cout << "yaw: " << yaw <<", pitch: " << pitch << ", roll: " << roll << std::endl;
-  Eigen::Matrix4f quad2Cam = Quadrotor2Camera(pitch);
-  Eigen::Matrix4f quadPoseMatrix = mat*quad2Cam.inverse();
-  Cartesion quadPose;
-  Matrix2Cartesion(quadPoseMatrix, quadPose);
-  ViewPoint vp;
-  vp.quadrotor_pose = quadPose;
-  vp.camera_angle = pitch;
-  return vp;
 }
 
 Eigen::Matrix4f PCLViewPoint::Quadrotor2Camera(double camera_angle)
@@ -280,102 +390,6 @@ Eigen::Matrix4f PCLViewPoint::Quadrotor2Camera(double camera_angle)
   Eigen::Matrix4f quad2Camera = quadBase*cameraJoint;
   return quad2Camera;
 }
-
-Eigen::Affine3f PCLViewPoint::CameraPose(const Eigen::Vector3f& center, const Eigen::Vector3f& normal)
-{
-  //std::cout << "(" << center.x() <<","<< center.y()<<"," << center.z()<<")" << std::endl;
-  Eigen::Vector3f nm = normal.normalized();
-  //std::cout << "(" << nm.x() <<","<< nm.y()<<"," << nm.z()<<")" << std::endl;
-  // nm = R*[0,0,1]'
-  // c = 0.0, Cc = 1, Sc = 0
-  // CcSbCa+ScSb = SbCa = nm.x()
-  // ScSbCa-CcSb = -Sb = nm.y()
-  // CbCa = nm.z()
-  double c = 0.0; // yaw
-  double a = asin(-(nm.y()));  // roll  angle should be in [-pi/2, pi/2]
-  double b = atan2(nm.x(),nm.z()); // pitch
-  //std::cout << "y:"<< a <<"p:"<< b <<"r:"<< c << std::endl;
-  Eigen::Affine3f t = Eigen::Affine3f(Eigen::Translation3f(center.x(),center.y(),center.z()));
-  Eigen::Affine3f rx = Eigen::Affine3f(Eigen::AngleAxisf(a,Eigen::Vector3f::UnitX()));
-  Eigen::Affine3f ry = Eigen::Affine3f(Eigen::AngleAxisf(b,Eigen::Vector3f::UnitY()));
-  Eigen::Affine3f rz = Eigen::Affine3f(Eigen::AngleAxisf(c,Eigen::Vector3f::UnitZ()));
-  Eigen::Affine3f rot = rz*ry*rx;
-  Eigen::Affine3f pose = t*rot;
-
-  return pose;
-}
-
-bool PCLViewPoint::FrustumCulling(const WSPointCloudPtr cloud,
-                               const Eigen::Matrix4f& cpose,
-                               float hfov, float vfov,
-                               float ndist, float fdist,
-                               WSPointCloudPtr viewCloud)
-{
-  if (cloud == nullptr)
-    return false;
-
-  Eigen::Matrix4f poseNew = CameraPoseTransform(cpose);
-  // frustum culling
-  pcl::FrustumCulling<WSPoint> fc;
-  fc.setInputCloud(cloud);
-  fc.setCameraPose(poseNew);
-  fc.setHorizontalFOV(hfov); // degree
-  fc.setVerticalFOV(vfov); // degree
-  fc.setNearPlaneDistance(ndist);
-  fc.setFarPlaneDistance(fdist);
-  fc.filter(*viewCloud);
-  return true;
-}
-
-Eigen::Matrix4f PCLViewPoint::CameraPoseTransform(const Eigen::Matrix4f& mat)
-{
-  Eigen::Matrix4f cam2rot;
-  cam2rot(0,0) = 0;
-  cam2rot(0,1) = 0;
-  cam2rot(0,2) = 1;
-  cam2rot(0,3) = 0;
-  cam2rot(1,0) = 0;
-  cam2rot(1,1) = -1;
-  cam2rot(1,2) = 0;
-  cam2rot(1,3) = 0;
-  cam2rot(2,0) = 1;
-  cam2rot(2,1) = 0;
-  cam2rot(2,2) = 0;
-  cam2rot(2,3) = 0;
-  cam2rot(3,0) = 0;
-  cam2rot(3,1) = 0;
-  cam2rot(3,2) = 0;
-  cam2rot(3,3) = 1;
-  return mat*cam2rot;
-}
-
-void PCLViewPoint::Matrix2Cartesion(const Eigen::Matrix4f& mat, Cartesion& quadPose)
-{
-  Eigen::Matrix3f affine = mat.topLeftCorner(3,3);
-  Eigen::Quaternionf q(affine);
-  quadPose.pos_x = mat(0,3);
-  quadPose.pos_y = mat(1,3);
-  quadPose.pos_z = mat(2,3);
-  quadPose.ori_w = q.w();
-  quadPose.ori_x = q.x();
-  quadPose.ori_y = q.y();
-  quadPose.ori_z = q.z();
-}
-
-void PCLViewPoint::Quaternion2EularAngles(const Eigen::Quaternionf& q, double& yaw, double& pitch, double& roll)
-{
-  double sr_cp = 2*(q.w()*q.x()+q.y()*q.z());
-  double cr_cp = 1-2*(q.x()*q.x()+q.y()*q.y());
-  roll = atan2(sr_cp,cr_cp);
-  double sp = 2*(q.w()*q.y()-q.z()*q.x());
-  pitch = asin(sp);
-  if (abs(sp) >= 1)
-    pitch = copysign(0.5*M_PI, sp);
-  double sy_cp = 2*(q.w()*q.z()+q.x()*q.y());
-  double cy_cp = 1-2*(q.y()*q.y()+q.z()*q.z());
-  yaw = atan2(sy_cp, cy_cp);
-}
-
 
 void PCLViewPoint::Save2File(const std::string& output,
                              std::vector<ViewPoint>& vps,
@@ -430,3 +444,17 @@ void PCLViewPoint::LoadTrajectory(const std::string& input, std::vector<ViewPoin
   }
   tFile.close();
 }
+
+// void PCLViewPoint::Quaternion2EularAngles(const Eigen::Quaternionf& q, double& yaw, double& pitch, double& roll)
+// {
+//   double sr_cp = 2*(q.w()*q.x()+q.y()*q.z());
+//   double cr_cp = 1-2*(q.x()*q.x()+q.y()*q.y());
+//   roll = atan2(sr_cp,cr_cp);
+//   double sp = 2*(q.w()*q.y()-q.z()*q.x());
+//   pitch = asin(sp);
+//   if (abs(sp) >= 1)
+//     pitch = copysign(0.5*M_PI, sp);
+//   double sy_cp = 2*(q.w()*q.z()+q.x()*q.y());
+//   double cy_cp = 1-2*(q.y()*q.y()+q.z()*q.z());
+//   yaw = atan2(sy_cp, cy_cp);
+// }

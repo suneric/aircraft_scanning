@@ -57,7 +57,15 @@ namespace asv3d
 
   class PCLViewPoint{
   public:
-    void GenerateCameraPositions(const PCLOctree& tree, double distance, std::vector<Eigen::Affine3f>& cameras, std::vector<ViewPoint>& vps, int type = 0);
+    void GenerateCameraPositions(
+      const PCLOctree& tree,
+      double distance,
+      const Eigen::Vector3f& refNormal,
+      std::vector<Eigen::Affine3f>& cameras,
+      std::vector<ViewPoint>& vps,
+      int type = 0);
+
+
     WSPointCloudPtr CameraViewVoxels(const PCLOctree& tree, const Eigen::Affine3f& camera, std::vector<int>& voxelInices);
     void Save2File(const std::string& output,
                    std::vector<ViewPoint>& vps,
@@ -65,32 +73,46 @@ namespace asv3d
     void LoadTrajectory(const std::string& input, std::vector<ViewPoint>& vps);
     Eigen::Affine3f ViewPoint2CameraPose(const ViewPoint& vp);
 
+    bool FilterViewPoint(const PCLOctree& tree, const Eigen::Affine3f& camera, const ViewPoint& viewpoint);
 
   private:
-    void CameraPositionWithVoxelAverageNormal(const PCLOctree& tree, double distance, std::vector<Eigen::Affine3f>& cameras, std::vector<ViewPoint>& vps);
-    void CameraPositionWithVoxelCube(const PCLOctree& tree, double distance, std::vector<Eigen::Affine3f>& cameras, std::vector<ViewPoint>& vps);
+    bool IsVisibleVoxel(const PCLOctree& tree, const Eigen::Vector3f& camera, const Eigen::Vector3f& centroid);
+
+    void CameraPositionWithVoxelAverageNormal(
+      const PCLOctree& tree,
+      double distance,
+      const Eigen::Vector3f& refNormal,
+      std::vector<Eigen::Affine3f>& cameras,
+      std::vector<ViewPoint>& vps);
+
     bool CameraPosition(const PCLOctree& tree,
                         const Eigen::Vector3f& target,
                         const Eigen::Vector3f& normal,
-                        double distMin, double distMax,
+                        double distance,
                         Eigen::Affine3f& camera,
-                        ViewPoint& viewpoint);
-    bool FilterViewPoint(const PCLOctree& tree, const Eigen::Affine3f& camera, ViewPoint& viewpoint);
+                        ViewPoint& vp);
 
-    ViewPoint CreateViewPoint(const Eigen::Affine3f& camera);
-    Eigen::Matrix4f Quadrotor2Camera(double camera_angle);
+    Eigen::Affine3f CameraPose(const Eigen::Vector3f& center,
+                               const Eigen::Vector3f& normal,
+                               double& alpha,
+                               double& beta);
+    ViewPoint CreateViewPoint(const Eigen::Affine3f& camera,double alpha,double beta);
+    void Matrix2Cartesion(const Eigen::Matrix4f& mat, Cartesion& vp);
 
-    Eigen::Affine3f CameraPose(const Eigen::Vector3f& center, const Eigen::Vector3f& normal);
     bool FrustumCulling(const WSPointCloudPtr cloud,
                         const Eigen::Matrix4f& camera,
                         float hfov, float vfov,
                         float ndist, float fdist,
                         WSPointCloudPtr viewPoints);
+
     // convert traditional x right, y down and z forward matrix to xforward,y up, z right.
     Eigen::Matrix4f CameraPoseTransform(const Eigen::Matrix4f& mat);
+    Eigen::Matrix4f Quadrotor2Camera(double camera_angle);
 
-    void Matrix2Cartesion(const Eigen::Matrix4f& mat, Cartesion& vp);
-    void Quaternion2EularAngles(const Eigen::Quaternionf& q, double& yaw, double& pitch, double& roll);
+    // void CameraPositionWithVoxelCube(const PCLOctree& tree,
+    //                                  double distance,
+    //                                  std::vector<Eigen::Affine3f>& cameras);
+    //void Quaternion2EularAngles(const Eigen::Quaternionf& q, double& yaw, double& pitch, double& roll);
   };
 };
 
