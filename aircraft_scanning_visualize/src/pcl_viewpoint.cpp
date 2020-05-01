@@ -13,25 +13,12 @@ void PCLViewPoint::GenerateCameraPositions(
   const PCLOctree& tree,
   double distance,
   const Eigen::Vector3f& refNormal,
-  std::vector<Eigen::Affine3f>& cameras,
-  std::vector<ViewPoint>& vps,
-  int type)
-{
-  if (type == 0)
-    CameraPositionWithVoxelAverageNormal(tree, distance,refNormal,cameras,vps);
-  // else
-  //   CameraPositionWithVoxelCube(tree, distance, cameras);
-}
-
-void PCLViewPoint::CameraPositionWithVoxelAverageNormal(
-  const PCLOctree& tree,
-  double distance,
-  const Eigen::Vector3f& refNormal,
+  const std::vector<double>& bbox,
   std::vector<Eigen::Affine3f>& cameras,
   std::vector<ViewPoint>& vps)
 {
-  WSPointCloudPtr vCloud = tree.VoxelCentroidCloud();
-  WSPointCloudNormalPtr vNormal = tree.VoxelAverageNormals(refNormal);
+  WSPointCloudPtr vCloud;
+  WSPointCloudNormalPtr vNormal = tree.VoxelAverageNormals(refNormal,bbox,vCloud);
   for (size_t i = 0; i < vCloud->points.size(); ++i)
   {
     Eigen::Vector3f point(vCloud->points[i].x, vCloud->points[i].y, vCloud->points[i].z);

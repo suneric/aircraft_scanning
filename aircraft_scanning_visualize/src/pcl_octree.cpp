@@ -94,26 +94,53 @@ WSPointCloudPtr PCLOctree::VoxelCentroidCloud() const
   return m_centroidCloud;
 }
 
-WSPointCloudNormalPtr PCLOctree::VoxelAverageNormals(const Eigen::Vector3f& refNormal) const
+namespace{
+  bool InBoundingBox(const WSPoint& point, const std::vector<double>& bbox)
+  {
+    if (point.x < bbox[0] || point.x > bbox[1])
+      return false;
+    if (point.y < bbox[2] || point.y > bbox[3])
+      return false;
+    if (point.z < bbox[4] || point.z > bbox[5])
+      return false;
+    return true;
+  }
+}
+
+WSPointCloudNormalPtr PCLOctree::VoxelAverageNormals(
+  const Eigen::Vector3f& refNormal,
+  const std::vector<double>& bbox,
+  WSPointCloudPtr& voxelCentroid) const
 {
   if (nullptr == m_centroidCloud)
     return nullptr;
 
   std::vector<int> voxelIndices;
   int nVoxel = m_voxelMap.VoxelIndices(voxelIndices);
-
-  WSPointCloudNormalPtr normals(new WSPointCloudNormal);
-  normals->points.resize(nVoxel);
+  std::vector<WSPoint> subsetCentroids;
   for (int i = 0; i < nVoxel; ++i)
   {
     WSPoint point = m_voxelMap.GetVoxelCentroid(i);
+    if (InBoundingBox(point,bbox))
+      subsetCentroids.push_back(point);
+  }
+
+  int nSubset = subsetCentroids.size();
+  WSPointCloudPtr centroids(new WSPointCloud);
+  centroids->points.resize(nSubset);
+  WSPointCloudNormalPtr normals(new WSPointCloudNormal);
+  normals->points.resize(nSubset);
+  for (int i = 0; i < nSubset; ++i)
+  {
+    WSPoint point = subsetCentroids[i];
+    centroids->points[i] = point;
     WSNormal normal;
     EvaluateVoxelNormal(m_cloud, point, normal, refNormal);
     normals->points[i].normal_x = normal.normal_x;
     normals->points[i].normal_y = normal.normal_y;
     normals->points[i].normal_z = normal.normal_z;
   }
-
+  voxelCentroid = centroids;
   return normals;
 }
 

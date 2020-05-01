@@ -147,9 +147,9 @@ namespace asv3d {
     double Resolution() const {return m_os->getResolution();}
 
     WSPointCloudPtr VoxelCentroidCloud() const;
-    WSPointCloudNormalPtr VoxelAverageNormals(const Eigen::Vector3f& refNormal) const;
-
-
+    WSPointCloudNormalPtr VoxelAverageNormals(const Eigen::Vector3f& refNormal,
+       const std::vector<double>& bbox,
+       WSPointCloudPtr& voxelCentroid) const;
 
     void FindOutsidePolygons(std::vector<WSPointCloudPtr>& outsidePolygons) const;
     void VoxelOutsideCenters(std::vector<VoxelNormals>& outsideNormals) const;

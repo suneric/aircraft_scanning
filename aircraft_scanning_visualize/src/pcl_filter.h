@@ -20,6 +20,12 @@ namespace asv3d {
 
       WSPointCloudPtr ExtractPoints(const WSPointCloudPtr cloud, const std::vector<int>& indices);
       WSPointCloudNormalPtr ExtractNormals(const WSPointCloudNormalPtr normal, const std::vector<int>& indices);
+
+      // extract point on the slicing plane
+      WSPointCloudPtr SlicePoints(const WSPointCloudPtr cloud, const Eigen::Vector3f& rootPt, const Eigen::Vector3f& normal);
+      WSPointCloudPtr SortPointsInZ(const WSPointCloudPtr cloud, double resolution, double min, double max);
+      WSPointCloudPtr NeighborPoints(const WSPoint& pt, const WSPointCloudPtr cloud, double dRadius);
+      WSNormal PointNormal(const WSPoint& pt, const WSPointCloudPtr cloud, double dRadius, const Eigen::Vector3f& refNormal);
   };
 
 };

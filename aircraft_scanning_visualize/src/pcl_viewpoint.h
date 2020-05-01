@@ -61,9 +61,9 @@ namespace asv3d
       const PCLOctree& tree,
       double distance,
       const Eigen::Vector3f& refNormal,
+      const std::vector<double>& bbox,
       std::vector<Eigen::Affine3f>& cameras,
-      std::vector<ViewPoint>& vps,
-      int type = 0);
+      std::vector<ViewPoint>& vps);
 
 
     WSPointCloudPtr CameraViewVoxels(const PCLOctree& tree, const Eigen::Affine3f& camera, std::vector<int>& voxelInices);
@@ -77,13 +77,6 @@ namespace asv3d
 
   private:
     bool IsVisibleVoxel(const PCLOctree& tree, const Eigen::Vector3f& camera, const Eigen::Vector3f& centroid);
-
-    void CameraPositionWithVoxelAverageNormal(
-      const PCLOctree& tree,
-      double distance,
-      const Eigen::Vector3f& refNormal,
-      std::vector<Eigen::Affine3f>& cameras,
-      std::vector<ViewPoint>& vps);
 
     bool CameraPosition(const PCLOctree& tree,
                         const Eigen::Vector3f& target,

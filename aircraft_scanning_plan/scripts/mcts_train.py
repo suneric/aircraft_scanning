@@ -209,7 +209,7 @@ if __name__ == "__main__":
     print("parameters: action dimension", action_dim,"iteration number", simulation_count, "desired coverage", target_coverage,"c_param",cparam)
 
     vpfile = os.path.join(os.path.dirname(sys.path[0]+"/../viewpoint/"),"viewpoints.txt")
-    env = UAVScanningEnv(vpfile,ViewPoint(-1,0,-29,0,0,0,0,1,0),action_dim)
+    env = UAVScanningEnv(vpfile,ViewPoint(-1,0,-30,8,0,0,0,1,0),action_dim)
     start_time = time.time()
     state = env.reset()
     #root = MCTSNodeCost(env.utility(), state, parent=None)

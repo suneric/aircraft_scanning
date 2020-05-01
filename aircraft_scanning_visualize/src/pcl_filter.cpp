@@ -8,6 +8,7 @@
 #include <pcl/filters/extract_indices.h>
 #include <pcl/filters/impl/sampling_surface_normal.hpp>
 #include <pcl/filters/crop_box.h>
+#include <pcl/features/normal_3d.h>
 
 #include "pcl_filter.h"
 
@@ -172,4 +173,136 @@ WSPointCloudNormalPtr PCLFilter::ExtractNormals(const WSPointCloudNormalPtr norm
   extract.setNegative(false);
   extract.filter(*sNormal);
   return sNormal;
+}
+
+WSPointCloudPtr PCLFilter::SlicePoints(const WSPointCloudPtr cloud, const Eigen::Vector3f& rootPt, const Eigen::Vector3f& normal)
+{
+  if (cloud == nullptr)
+    return nullptr;
+  double tol = 0.005;
+  std::vector<WSPoint> pts;
+  for (size_t i = 0; i < cloud->points.size(); ++i)
+  {
+    WSPoint pt = cloud->points[i];
+    Eigen::Vector3f cpt(pt.x, pt.y, pt.z);
+    Eigen::Vector3f refNormal = (cpt - rootPt).normalized();
+    double v = refNormal.dot(normal);
+    if (v <= tol && v >= -tol)
+    {
+      // std::cout << "normal " << normal.x() << " " << normal.y() << " " << normal.z();
+      // std::cout << " refnormal " <<  refNormal.x() << " " << refNormal.y() << " " << refNormal.z();
+      // std::cout << " dot product " << v << std::endl;
+      pts.push_back(pt);
+    }
+  }
+  std::cout << "slicing the point coud with plane " << rootPt.x() << " " << rootPt.y() << " " << rootPt.z() << " points: " << pts.size() << std::endl;
+
+  WSPointCloudPtr extract(new WSPointCloud);
+  extract->points.resize(pts.size());
+  for (int i = 0; i < pts.size(); ++i)
+    extract->points[i] = pts[i];
+
+  return extract;
+}
+
+WSPointCloudPtr PCLFilter::SortPointsInZ(const WSPointCloudPtr cloud, double resolution, double min, double max)
+{
+  double minz = max, maxz = min;
+  WSPoint firstPt, lastPt;
+  for (size_t i = 0; i < cloud->points.size(); ++i)
+  {
+    WSPoint pt = cloud->points[i];
+    if (pt.z < minz)
+    {
+      minz = pt.z;
+      firstPt = pt;
+    }
+    if (pt.z > maxz)
+    {
+      maxz = pt.z;
+      lastPt = pt;
+    }
+  }
+
+  std::vector<WSPoint> pts;
+  WSPoint pt = firstPt;
+  while (pt.z < maxz)
+  {
+    pts.push_back(pt);
+    WSPointCloudPtr neighborPts = NeighborPoints(pt,cloud,resolution);
+    size_t numPt = neighborPts->points.size();
+    bool bNext = false;
+    for (size_t i = 0; i < numPt; ++i)
+    {
+      WSPoint nextPt = neighborPts->points[i];
+      if (nextPt.z > pt.z)
+      {
+        bNext = true;
+        pt = nextPt;
+      }
+    }
+    if (bNext == false)
+      break;
+  }
+  pts.push_back(lastPt);
+
+  std::cout << "sort points in Z " << pts.size() << std::endl;
+  WSPointCloudPtr newCloud(new WSPointCloud);
+  newCloud->points.resize(pts.size());
+  for (int i = 0; i < pts.size(); ++i)
+  {
+    newCloud->points[i] = pts[i];
+  }
+  return newCloud;
+}
+
+WSPointCloudPtr PCLFilter::NeighborPoints(const WSPoint& pt, const WSPointCloudPtr cloud, double dRadius)
+{
+  std::vector<WSPoint> pts;
+  for (size_t i = 0; i < cloud->points.size(); ++i)
+  {
+    WSPoint pt1 = cloud->points[i];
+    double dist = (pt.x-pt1.x)*(pt.x-pt1.x)+(pt.y-pt1.y)*(pt.y-pt1.y)+(pt.z-pt1.z)*(pt.z-pt1.z);
+    if (dist < dRadius*dRadius)
+    {
+      pts.push_back(pt1);
+    }
+  }
+  WSPointCloudPtr newCloud(new WSPointCloud);
+  newCloud->points.resize(pts.size());
+  for (int i = 0; i < pts.size(); ++i)
+  {
+    newCloud->points[i] = pts[i];
+  }
+  return newCloud;
+}
+
+WSNormal PCLFilter::PointNormal(const WSPoint& pt, const WSPointCloudPtr cloud, double dRadius, const Eigen::Vector3f& refNormal)
+{
+  WSPointCloudNormalPtr normals(new WSPointCloudNormal);
+  WSPointCloudPtr neighbor = NeighborPoints(pt,cloud,dRadius);
+  pcl::NormalEstimation<WSPoint, WSNormal> ne;
+  pcl::search::KdTree<WSPoint>::Ptr tree(new pcl::search::KdTree<WSPoint>());
+  ne.setSearchMethod(tree);
+  ne.setInputCloud(neighbor);
+  ne.setKSearch(10);
+  ne.compute(*normals);
+  // find average normal for the voxel
+  Eigen::Vector3f vec(0,0,0);
+  size_t num = normals->points.size();
+  for (size_t i = 0; i < num; ++i)
+  {
+    WSNormal normal = normals->points[i];
+    vec += Eigen::Vector3f(normal.normal_x, normal.normal_y, normal.normal_z);
+  }
+
+  Eigen::Vector3f nm = (vec/num).normalized();
+  if (nm.dot(refNormal) < 0.0) // normal angle > M_PI/2
+    nm = -nm;
+
+  WSNormal normal;
+  normal.normal_x = nm.x();
+  normal.normal_y = nm.y();
+  normal.normal_z = nm.z();
+  return normal;
 }

@@ -31,7 +31,7 @@ int  ParseArguments(int argc, char** argv,
   int& display,
   int& sampleType,
   std::vector<double>& limitBox,
-  Eigen::Vector3f& refNormal);
+  string& configFile);
 
 WSPointCloudPtr FilterPointCloud(const WSPointCloudPtr cloud,
   double resolution);
@@ -41,7 +41,7 @@ void GenerateViewpoints(PCLViewer* viewer,
   double distance,
   double resolution,
   int display,
-  const Eigen::Vector3f& refNormal,
+  const string& configFile,
   int sampleType = 0);
 
 void UpdatePointCloud(PCLViewer* viewer,
@@ -60,6 +60,11 @@ void SegmentPointCloud(PCLViewer* viewer,
   const std::vector<double>& limitBox,
   bool bFilter);
 
+void GenerateScanningPath(PCLViewer* viewer,
+  const WSPointCloudPtr cloud,
+  double distance,
+  double resolution
+);
 
 void AddCubes(PCLViewer* viewer,const std::vector<WSPoint>& points, const std::string& nameprefix, double voxelLen, int vp, double r, double g, double b)
 {
@@ -83,7 +88,7 @@ int main(int argc, char** argv) try
   double distance = -1;
   int sampleType = 0;
   std::vector<double> limitBox;
-  Eigen::Vector3f refNormal(0,0,1);
+  string configFile = "";
   int task = ParseArguments(argc,argv,dir,
     trajectory,
     bSave,
@@ -93,7 +98,7 @@ int main(int argc, char** argv) try
     display,
     sampleType,
     limitBox,
-    refNormal);
+    configFile);
 
   PCLViewer viewer("3D Point Cloud Viewer");
   if(task == 1)
@@ -119,15 +124,34 @@ int main(int argc, char** argv) try
   else if (task == 3)
   {
     WSPointCloudPtr cloud = viewer.LoadPointCloud(dir);
-    GenerateViewpoints(&viewer, cloud, distance, resolution, display, refNormal, sampleType);
+    GenerateViewpoints(&viewer, cloud, distance, resolution, display, configFile, sampleType);
     while(!viewer.IsStop())
-      viewer.Spin();
+    {
+      mtx.lock();
+      viewer.SpinOnce();
+      mtx.unlock();
+    }
   }
   else if (task == 4)
   {
     SegmentPointCloud(&viewer, dir, limitBox, bFilter);
     while(!viewer.IsStop())
-      viewer.Spin();
+    {
+      mtx.lock();
+      viewer.SpinOnce();
+      mtx.unlock();
+    }
+  }
+  else if (task == 5)
+  {
+    WSPointCloudPtr cloud = viewer.LoadPointCloud(dir);
+    GenerateScanningPath(&viewer,cloud,distance,resolution);
+    while(!viewer.IsStop())
+    {
+      mtx.lock();
+      viewer.SpinOnce();
+      mtx.unlock();
+    }
   }
   else
   {
@@ -306,7 +330,7 @@ void DisplayTrajectory(PCLViewer* viewer, const std::string& dir, const std::str
       mtx.unlock();
 
       // Sleep for 2 seconds for the ply file
-      std::this_thread::sleep_for(std::chrono::seconds(2));
+      std::this_thread::sleep_for(std::chrono::seconds(1));
   }
 }
 
@@ -316,11 +340,35 @@ void GenerateViewpoints(PCLViewer* viewer,
   double distance,
   double resolution,
   int display,
-  const Eigen::Vector3f& refNormal,
+  const string& configFile,
   int sampleType)
 {
   if (nullptr == srcCloud)
     return;
+
+  // load configuration
+  typedef std::vector<double> BBox;
+  std::vector<std::pair<Eigen::Vector3f,BBox> > segments;
+  std::ifstream config(configFile);
+  std::string line;
+  std::cout << "read config " << segments.size() << std::endl;
+  while (std::getline(config, line))
+  {
+    std::cout << line << std::endl;
+    std::stringstream linestream(line);
+    std::string nx,ny,nz,xmin,xmax,ymin,ymax,zmin,zmax;
+    linestream >> nx >> ny >> nz >> xmin >> xmax >> ymin >> ymax >> zmin >> zmax;
+    BBox box;
+    box.push_back(std::stod(xmin));
+    box.push_back(std::stod(xmax));
+    box.push_back(std::stod(ymin));
+    box.push_back(std::stod(ymax));
+    box.push_back(std::stod(zmin));
+    box.push_back(std::stod(zmax));
+    Eigen::Vector3f refNormal(std::stod(nx),std::stod(ny),std::stod(nz));
+    segments.push_back(std::make_pair(refNormal,box));
+  }
+  config.close();
 
   ///////////////////////////////////////////////////////////////////////////
   // viewpoint creator
@@ -330,7 +378,13 @@ void GenerateViewpoints(PCLViewer* viewer,
   std::vector<ViewPoint> vps;
   std::vector<Eigen::Affine3f> cameras;
   PCLOctree octree(srcCloud, resolution,3);
-  viewCreator.GenerateCameraPositions(octree,distance,refNormal,cameras,vps);
+  for (int i = 0; i < segments.size(); ++i)
+  {
+    Eigen::Vector3f refNormal = segments[i].first;
+    BBox bbox = segments[i].second;
+    viewCreator.GenerateCameraPositions(octree,distance,refNormal,bbox,cameras,vps);
+  }
+
 
   ////////////////////////////////////////////////////////////////////////////
   // voxel in view frustum culling
@@ -345,13 +399,14 @@ void GenerateViewpoints(PCLViewer* viewer,
     double qr_x = vp.quadrotor_pose.pos_x;
     double qr_y = vp.quadrotor_pose.pos_y;
     double qr_z = vp.quadrotor_pose.pos_z;
-    //height limitation
-    if (qr_z < 5)
-      continue;
-    if (qr_x < 2.5 && qr_x > -2.5)
+    // //height limitation
+    if (qr_x < 3.0 && qr_x >-3.0)
     {
-      if (qr_y > 7 || qr_y < -7 || qr_z < 7)
-        continue;
+      if (qr_z > 3 && qr_z < 8)
+      {
+        if (qr_y > -26)
+          continue;
+      }
     }
 
     if(viewCreator.FilterViewPoint(octree2,cameras[i],vp))
@@ -485,6 +540,78 @@ void SegmentPointCloud(PCLViewer* viewer, const std::string& dir, const std::vec
   }
 }
 
+// generate continous scanning path with input Cloud
+// 1. slice the cloud with plane
+// 2. find all point on the plane
+// 3. offset the point
+// 4. conncet all the point form a polyline
+void GenerateScanningPath(PCLViewer* viewer, const WSPointCloudPtr cloud, double distance, double resolution)
+{
+  // the point cloud bounding box is
+  // x: -5 to -5
+  // y: -23 to -13
+  // z : 4.5 to 8
+  int vp = viewer->CreateViewPort(0,0,1,1);
+  viewer->AddPointCloud(cloud, vp);
+
+  std::vector<double> bbox;
+  bbox.push_back(0);
+  bbox.push_back(5);
+  bbox.push_back(-23);
+  bbox.push_back(-13);
+  bbox.push_back(4.6);
+  bbox.push_back(8);
+  PCLFilter filter;
+  WSPointCloudPtr newCloud = filter.FilterPCLPointInBBox(cloud,bbox,0);
+  // WSPointCloudPtr newCloud = filter.FilterPCLPoint(newCloud,0.001);
+  double z = 4.6;
+  double x = 0;
+  double y = -23.0+0.05;
+  Eigen::Vector3f normal(0,1,0);
+  int n = 1;
+  std::vector<WSPoint> ftPts;
+  while (y < -13)
+  {
+    Eigen::Vector3f root(x,y,z);
+    WSPointCloudPtr pts = filter.SlicePoints(newCloud, root, normal);
+    pts = filter.SortPointsInZ(pts,0.3,4.5,8);
+    int numberPt = pts->points.size();
+    if (n%2 == 0)
+    {
+      for (int i = numberPt-1; i >= 0; i--)
+        ftPts.push_back(pts->points[i]);
+    }
+    else
+    {
+      for (int i = 0; i < numberPt; ++i)
+        ftPts.push_back(pts->points[i]);
+    }
+    y = y + resolution;
+    n++;
+  }
+
+  // offset
+  std::vector<WSPoint> offsetPts;
+  for (size_t i = 0; i < ftPts.size(); ++i)
+  {
+    WSPoint pt = ftPts[i];
+    WSNormal nm = filter.PointNormal(pt,cloud,0.3,Eigen::Vector3f(1,0,1));
+
+    WSPoint offset;
+    offset.x = pt.x+nm.normal_x*distance;
+    offset.y = pt.y+nm.normal_y*distance;
+    offset.z = pt.z+nm.normal_z*distance;
+    offsetPts.push_back(offset);
+  }
+
+  // add polyline path
+  for (size_t i = 0; i < offsetPts.size(); ++i)
+  {
+    if (i > 1)
+      viewer->AddLine(offsetPts[i-1],offsetPts[i],i,1.0,0.0,0.0,vp);
+  }
+}
+
 ////////////////////////////////////////////////////////////////
 WSPointCloudPtr FilterPointCloud(const WSPointCloudPtr srcCloud, double resolution)
 {
@@ -515,9 +642,10 @@ void PrintHelp()
   std::cout << "Command line with providing a directory containing the .ply files:\n";
   std::cout << "    1. view point cloud:   cmd [-view|-v] [file_directory] [octree resolution] [display_type] [trajectory]\n";
   std::cout << "    2. merge pointcloud:   cmd [-merge|-m] [file_directory] [filter] [downsample resolution]\n";
-  std::cout << "    3. create viewpoints:  cmd [-trajectory|-t] [file_directory] [viewpoint distance] [octree resolution] [display_type] [nx] [ny] [nz]\n";
+  std::cout << "    3. create viewpoints:  cmd [-trajectory|-t] [file_directory] [viewpoint distance] [octree resolution] [display_type] [config]\n";
   std::cout << "       display_type: '-4': uncovered voxels; '-3': covered voxels; '-2': add octree voxels; '-1': add camera positions;\n";
   std::cout << "    4. segment pointcloud: cmd [-segment|-s] [file_directory] [xmin] [xmax] [ymin] [ymax] [zmin] [zmax]\n";
+  std::cout << "    5. create continuous trajectory: cmd [-c] [file_directory] [offset distance] [margin]\n";
 }
 
 int ParseArguments(int argc, char** argv,
@@ -530,12 +658,11 @@ int ParseArguments(int argc, char** argv,
                   int& display,
                   int& sampleType,
                   std::vector<double>& limitBox,
-                  Eigen::Vector3f& refNormal
+                  string& configFile
                 )
 {
   if (argc < 2)
     return 0;
-
   std::string task = std::string(argv[1]);
   if (task.compare("-v") == 0 || task.compare("-view") == 0)
   {
@@ -569,14 +696,7 @@ int ParseArguments(int argc, char** argv,
     if (argc > 5)
       display = std::stoi(argv[5]);
     if (argc > 6)
-      sampleType = std::stoi(argv[6]);
-    if (argc > 9)
-    {
-      double x = std::stod(argv[7]);
-      double y = std::stod(argv[8]);
-      double z = std::stod(argv[9]);
-      refNormal = Eigen::Vector3f(x,y,z);
-    }
+      configFile = std::string(argv[6]);
     return 3;
   }
   else if (task.compare("-s")==0 || task.compare("-segment") == 0)
@@ -596,6 +716,15 @@ int ParseArguments(int argc, char** argv,
       filter = std::string(argv[9]).compare("1")==0;
 
     return 4;
+  }
+  else if (task.compare("-c")==0)
+  {
+    dir = std::string(argv[2]);
+    if (argc > 3)
+      distance = std::stod(argv[3]);
+    if (argc > 4)
+      resolution = std::stod(argv[4]);
+    return 5;
   }
   else
   {
