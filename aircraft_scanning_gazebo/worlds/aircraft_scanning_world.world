@@ -86,5 +86,12 @@
         </collision>
       </link>
     </model>
+    <gui fullscreen='0'>
+     <camera name='user_camera'>
+       <pose frame=''>60 -80 40 0 0.275643 2.21619</pose>
+       <view_controller>orbit</view_controller>
+       <projection_type>perspective</projection_type>
+     </camera>
+   </gui>
   </world>
 </sdf>

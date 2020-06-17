@@ -12,8 +12,9 @@ class trajectory_defined:
         self.trajectory = []
         self.index = 0
         #self._create_wing_trajectory()
-        file = os.path.join(sys.path[0],'../../aircraft_scanning_plan/trajectory/viewpoints.txt');
-        self._load_trajectory(file)
+        # file = os.path.join(sys.path[0],'../../aircraft_scanning_plan/trajectory/viewpoints.txt');
+        # self._load_trajectory(file)
+        self._create_trajectory()
 
     def completed(self):
         return self.index >= len(self.trajectory)

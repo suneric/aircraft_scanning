@@ -58,7 +58,7 @@ class uav_cam_controller:
 
     def landing(self):
         self.execute_camera_joint(0.0)
-        
+
         goal = LandingGoal()
         self.landing_client.send_goal(goal)
 
