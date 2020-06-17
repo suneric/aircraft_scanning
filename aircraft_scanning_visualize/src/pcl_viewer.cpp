@@ -98,10 +98,10 @@ void PCLViewer::AddCoordinateSystem(const Eigen::Affine3f& camPose, int idIndex,
   std::string name("ccs");
   name.append(std::to_string(vp));
   name.append(std::to_string(idIndex));
-  if (removeall)
-    m_viewer->removeAllCoordinateSystems(vp);
-  else
-    m_viewer->removeCoordinateSystem(name,vp);
+  // if (removeall)
+  //   m_viewer->removeAllCoordinateSystems(vp);
+  // else
+  //   m_viewer->removeCoordinateSystem(name,vp);
 
   m_viewer->addCoordinateSystem(1.0,camPose,name,vp);
 }
@@ -176,9 +176,9 @@ void PCLViewer::AddCube(const WSPoint& point, double s, const std::string& cubeN
 
 void PCLViewer::AddText(const std::string& text, const std::string& id, int vp)
 {
-  if (m_viewer->contains(id))
-    m_viewer->updateText(text,50,50,id);
-  else
+  // if (m_viewer->contains(id))
+  //   m_viewer->updateText(text,50,50,id);
+  // else
     m_viewer->addText(text,50,50,30,0.0,0.0,0.0,id,vp);
 }
 

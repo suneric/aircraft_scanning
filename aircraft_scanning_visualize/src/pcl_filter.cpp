@@ -4,11 +4,12 @@
 #include <pcl/filters/statistical_outlier_removal.h>
 #include <pcl/filters/sampling_surface_normal.h>
 #include <pcl/filters/random_sample.h>
-#include <pcl/filters/uniform_sampling.h>
 #include <pcl/filters/extract_indices.h>
 #include <pcl/filters/impl/sampling_surface_normal.hpp>
 #include <pcl/filters/crop_box.h>
 #include <pcl/features/normal_3d.h>
+//#include <pcl/filters/uniform_sampling.h>
+#include <pcl/keypoints/uniform_sampling.h>
 
 #include "pcl_filter.h"
 
@@ -137,12 +138,12 @@ WSPointCloudPtr PCLFilter::UniformSampling(const WSPointCloudPtr cloud, double r
   if (cloud == nullptr)
     return nullptr;
 
-  WSPointCloudPtr usCloud(new WSPointCloud());
-  pcl::UniformSampling<WSPoint> us;
-  us.setInputCloud(cloud);
-  us.setRadiusSearch(radius);
-  us.filter(*usCloud);
-  return usCloud;
+  // WSPointCloudPtr usCloud(new WSPointCloud());
+  // pcl::UniformSampling<WSPoint> us;
+  // us.setInputCloud(cloud);
+  // us.setRadiusSearch(radius);
+  // us.filter(*usCloud);
+  // return usCloud;
 }
 
 WSPointCloudPtr PCLFilter::ExtractPoints(const WSPointCloudPtr cloud, const std::vector<int>& indices)
