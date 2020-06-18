@@ -17,7 +17,7 @@ PCLViewer::PCLViewer(const std::string& title)
   m_viewer->initCameraParameters();
   m_viewer->setSize(1024,748);
   m_ptCloud = nullptr;
-  m_viewer->setBackgroundColor(1,1,1);
+  m_viewer->setBackgroundColor(0,0,0);
 }
 
 PCLViewer::~PCLViewer()
@@ -36,7 +36,7 @@ int PCLViewer::CreateViewPort(double xmin,double ymin,double xmax,double ymax)
   int vp(0);
   m_viewer->createViewPort(xmin,ymin,xmax,ymax,vp);
   // m_viewer->setBackgroundColor(0.618,0.618,0.618,vp);
-  m_viewer->setBackgroundColor(1,1,1,vp);
+  m_viewer->setBackgroundColor(0,0,0,vp);
   m_viewer->addCoordinateSystem(3,"global",vp);
   return vp;
 }
