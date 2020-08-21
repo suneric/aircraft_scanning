@@ -9,12 +9,8 @@
     <arg name="y" value="-20.0"/>
     <arg name="z" value="0.3"/>
   </include>
-
-  <!--add camera link joint controller-->
-  <include file="$(find aircraft_scanning_control)/launch/camera_joint_control.launch"/>
-
-  <include file="$(find aircraft_scanning_control)/launch/uav_scanning_auto.launch"/>
-
-  <!-- <include file="$(find aircraft_scanning_visualize)/launch/point_cloud_visualize.launch"/> -->
+  
+  <!--inlcude auto scanning controller-->
+  <include file="$(find aircraft_scanning_control)/launch/uav_auto_scanning.launch"/>
 
 </launch>

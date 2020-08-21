@@ -13,10 +13,7 @@
     <arg name="y" value="-30.0"/>
     <arg name="z" value="0.3"/>
   </include>
-
-  <!--add camera link joint controller-->
-  <include file="$(find aircraft_scanning_control)/launch/camera_joint_control.launch"/>
-
+  
   <!--add visualize and data process -->
   <include file="$(find aircraft_scanning_control)/launch/uav_scanning_data.launch"/>
 

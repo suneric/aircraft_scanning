@@ -1,30 +1,19 @@
 <?xml version="1.0"?>
 
-<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
-  <xacro:property name="M_PI" value="3.1415926535897931" />
-  <!-- Intel_RealSense_D400 info-->
-  <xacro:property name="realsense_d435_width" value="0.09"/>
-  <xacro:property name="realsense_d435_height" value="0.025"/>
-  <xacro:property name="realsense_d435_depth" value="0.025"/>
-  <!-- Intel_RealSense_D400_Family_Datasheet_Jan2019.pdf, page 64 -->
-  <xacro:property name="realsense_d435_front_to_depth" value="0.0042" />
-   <!-- Measured from CAD file -->
-  <xacro:property name="realsense_d435_mount_hole_to_front" value="0.0149" />
-  <xacro:property name="realsense_d435_case_offset_x" value="${realsense_d435_front_to_depth - realsense_d435_depth/2.0}"/>
-  <!-- mounting hole to depth frame, Intel_RealSense_D400_Family_Datasheet_Jan2019.pdf, page 66 -->
-  <xacro:property name="realsense_d435_case_offset_y" value="-0.0175"/>
-  <xacro:property name="realsense_d435_case_offset_z" value="0.0"/>
+<robot name="quadrotor" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-  <xacro:macro name="quadrotor_camera_macro" params="parent">
+    <xacro:property name="M_PI" value="3.1415926535897931" />
+
+    <!--quadrotor_base-->
+    <xacro:include filename="$(find hector_quadrotor_description)/urdf/quadrotor_base.urdf.xacro" />
+    <xacro:quadrotor_base_macro />
+
+    <!--link to camera-->
     <joint name="base_fixed_joint" type="fixed">
       <origin xyz="0.28 0 0" rpy="0 0 0"/>
-      <!-- <limit upper="0" lower="0" velocity="0" effort="0"/>
-      <dynamics damping="0.2"/>
-      <axis xyz="0 0 1" /> -->
-      <parent link="${parent}"/>
+      <parent link="base_link"/>
       <child link="base_fixed_link"/>
     </joint>
-
     <link name="base_fixed_link">
       <inertial>
         <mass value="0.001" />
@@ -44,11 +33,6 @@
         </geometry>
       </collision>
     </link>
-
-    <gazebo reference="base_fixed_link">
-      <material>Gazebo/Orange</material>
-    </gazebo>
-
     <joint name="camera_joint" type="revolute">
       <origin xyz="0.14 0 0" rpy="0 0 0"/>
       <limit upper="1.5708" lower="-1.5708" velocity="10.0" effort="0.001"/>
@@ -56,7 +40,6 @@
       <parent link="base_fixed_link"/>
       <child link="camera_link"/>
     </joint>
-
     <link name="camera_link">
       <inertial>
         <mass value="0.001" />
@@ -77,73 +60,16 @@
       </collision>
     </link>
 
+    <!-- add two links and joints for controlling the depth camera rs435 -->
+    <xacro:include filename="$(find aircraft_scanning_description)/urdf/rgbd_camera.urdf.xacro"/>
+    <xacro:quadrotor_camera_macro parent="camera_link"/>
+
+    <gazebo reference="base_fixed_link">
+      <material>Gazebo/Orange</material>
+    </gazebo>
     <gazebo reference="camera_link">
       <material>Gazebo/Yellow</material>
     </gazebo>
-
-    <joint name="rs435_joint" type="fixed">
-      <origin xyz="0.035 0 0" rpy="0 0 0"/>
-      <!-- <limit upper="0" lower="0" velocity="0" effort="10"/>
-      <dynamics damping="20"/>
-      <axis xyz="0 1 0" /> -->
-      <parent link="camera_link"/>
-      <child link="rs435_link"/>
-    </joint>
-
-    <link name="rs435_link">
-      <inertial>
-        <!-- <mass value="0.072" /> -->
-        <mass value="0.001" />
-        <origin xyz="0 0 0" rpy="0 0 0" />
-        <!-- <inertia ixx="5.8083e-4" ixy="0" ixz="0" iyy="3.0833e-5" iyz="0" izz="5.9083e-4" /> -->
-        <inertia ixx="1.0e-6" ixy="0" ixz="0" iyy="1.0e-6" iyz="0" izz="1.0e-6" />
-      </inertial>
-	    <visual>
-        <origin xyz="${realsense_d435_front_to_depth} ${realsense_d435_case_offset_y} 0.0" rpy="${M_PI/2} 0 ${M_PI/2}" />
-          <geometry>
-            <mesh filename="package://hector_sensors_description/meshes/intel_realsense_d435/D435.dae" scale="0.001 0.001 0.001" />
-          </geometry>
-      </visual>
-      <collision>
-        <origin xyz="${realsense_d435_case_offset_x} ${realsense_d435_case_offset_y} ${realsense_d435_case_offset_z}" rpy="0 0 0" />
-          <geometry>
-            <box size="${realsense_d435_depth} ${realsense_d435_width} ${realsense_d435_height}" />
-          </geometry>
-      </collision>
-    </link>
-
-    <gazebo reference="rs435_link">
-      <material>Gazebo/Grey</material>
-      <sensor type="depth" name="rs435">
-        <update_rate>30</update_rate>
-        <camera>
-          <horizontal_fov>${69.4*M_PI/180.0}</horizontal_fov>
-          <vertical_fov>${42.5*M_PI/180.0}</vertical_fov>
-          <diagonal_fov>${77.0*M_PI/180.0}</diagonal_fov>
-          <image>
-            <format>B8G8R8</format>
-            <!-- <width>1280</width>
-            <height>720</height> -->
-            <width>640</width>
-            <height>480</height>
-          </image>
-          <clip>
-            <near>0.15</near>
-            <far>9.0</far>
-          </clip>
-        </camera>
-        <plugin name="rs435_camera_controller" filename="libgazebo_ros_openni_kinect.so">
-          <cameraName>rs435</cameraName>
-          <imageTopicName>color/image_raw</imageTopicName>
-          <cameraInfoTopicName>color/camera_info</cameraInfoTopicName>
-          <depthImageTopicName>depth/image_raw</depthImageTopicName>
-          <depthImageCameraInfoTopicName>depth/camera_info</depthImageCameraInfoTopicName>
-          <pointCloudTopicName>depth/points</pointCloudTopicName>
-          <frameName>rs435_color_optical_frame</frameName>
-        </plugin>
-      </sensor>
-    </gazebo>
-
     <!--transmission for joint-->
     <transmission name="camera_tran">
       <type>transmission_interface/SimpleTransmission</type>
@@ -159,8 +85,8 @@
       <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
         <robotNamespace>/uav_scanning</robotNamespace>
         <robotSimType>gazebo_ros_control/DefaultRobotHWSim</robotSimType>
-        <legacyModeNS>true</legacyModeNS> 
+        <legacyModeNS>true</legacyModeNS>
       </plugin>
     </gazebo>
-  </xacro:macro>
+
 </robot>

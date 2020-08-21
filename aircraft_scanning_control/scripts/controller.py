@@ -93,7 +93,7 @@ class uav_cam_controller:
         srv.enable = enable
 
     def _quadrotor_callback(self, data):
-        index = 2 # the quadrotor pose index in /gazebo/model_states
+        index = data.name.index('quadrotor') # the quadrotor pose index in /gazebo/model_states
         self.quadrotor_pose = data.pose[index]
 
     def _camerapose_callback(self, data):

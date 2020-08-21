@@ -1,7 +1,7 @@
 <launch>
 
   <!-- Load joint controller configurations from YAML file to parameter server -->
-  <rosparam file="$(find aircraft_scanning_control)/config/camera_joint_control.yaml" command="load"/>
+  <rosparam file="$(find aircraft_scanning_control)/config/uav_camera_control.yaml" command="load"/>
 
   <!-- load the controllers -->
   <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
