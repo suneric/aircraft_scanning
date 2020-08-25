@@ -28,6 +28,7 @@ some dependencies for gazebo-ros-pkgs are required.
   - [hector_gazebo](http://wiki.ros.org/hector_gazebo)
   - [hector_localization](http://wiki.ros.org/hector_localization)
   - [hector_sensor_description](http://wiki.ros.org/hector_sensors_description)
+5. install [iiwa_stack](https://github.com/IFL-CAMP/iiwa_stack)
 
 ## packages
 - aircraft_scanning_description. the package of modeling the quadrotor and the realsense camera.

@@ -1,0 +1,23 @@
+<?xml version="1.0" ?>
+<robot name="mmrobot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+    <xacro:property name="PI" value="3.1415926535897931" />
+    <xacro:arg name="robot_name" default="mmrobot"/>
+    <xacro:arg name="hardware_interface" default="PositionJointInterface"/>
+
+    <!--wheel_base-->
+    <xacro:include filename="$(find aircraft_scanning_description)/urdf/4wheel_base.urdf.xacro" />
+    <xacro:fourwheeler_base_macro />
+
+    <!--iiwa14-->
+    <xacro:include filename="$(find iiwa_description)/urdf/materials.xacro" />
+    <xacro:include filename="$(find iiwa_description)/urdf/iiwa14.xacro"/>
+    <xacro:iiwa14 hardware_interface="$(arg hardware_interface)" robot_name="$(arg robot_name)" parent="link_support">
+      <origin xyz="0 0 0.6" rpy="0 0 0" />
+    </xacro:iiwa14>
+
+    <xacro:include filename="$(find aircraft_scanning_description)/urdf/rgbd_camera.urdf.xacro"/>
+    <xacro:camera_macro parent="$(arg robot_name)_link_ee">
+        <origin xyz="0 0 0.025" rpy="0 -${PI/2} 0" />
+    </xacro:camera_macro>
+
+</robot>

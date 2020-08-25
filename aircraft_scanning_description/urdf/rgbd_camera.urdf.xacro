@@ -14,10 +14,11 @@
   <!-- mounting hole to depth frame, Intel_RealSense_D400_Family_Datasheet_Jan2019.pdf, page 66 -->
   <xacro:property name="realsense_d435_case_offset_y" value="-0.0175"/>
   <xacro:property name="realsense_d435_case_offset_z" value="0.0"/>
+  <xacro:property name="rpy" value="0 0 0"/>
 
-  <xacro:macro name="quadrotor_camera_macro" params="parent">
+  <xacro:macro name="camera_macro" params="parent *origin">
     <joint name="rs435_joint" type="fixed">
-      <origin xyz="0.035 0 0" rpy="0 0 0"/>
+      <xacro:insert_block name="origin"/>
       <parent link="${parent}"/>
       <child link="rs435_link"/>
     </joint>

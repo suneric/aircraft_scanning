@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- load world with aircraft -->
+  <include file="$(find aircraft_scanning_gazebo)/launch/airliner757.launch"/>
+
+  <!--spawn quadrotor with realsense d435 camera-->
+  <include file="$(find aircraft_scanning_gazebo)/launch/spawn_mmrobot.launch" >
+    <arg name="x" value="7"/>
+    <arg name="y" value="-20.0"/>
+    <arg name="z" value="0.1"/>
+  </include>
+
+  <!--inlcude auto scanning controller-->
+  <!-- <include file="$(find aircraft_scanning_control)/launch/uav_auto_scanning.launch"/> -->
+
+</launch>

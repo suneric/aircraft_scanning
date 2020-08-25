@@ -1,9 +1,6 @@
 <?xml version="1.0"?>
 
 <robot name="quadrotor" xmlns:xacro="http://www.ros.org/wiki/xacro">
-
-    <xacro:property name="M_PI" value="3.1415926535897931" />
-
     <!--quadrotor_base-->
     <xacro:include filename="$(find hector_quadrotor_description)/urdf/quadrotor_base.urdf.xacro" />
     <xacro:quadrotor_base_macro />
@@ -62,7 +59,9 @@
 
     <!-- add two links and joints for controlling the depth camera rs435 -->
     <xacro:include filename="$(find aircraft_scanning_description)/urdf/rgbd_camera.urdf.xacro"/>
-    <xacro:quadrotor_camera_macro parent="camera_link"/>
+    <xacro:camera_macro parent="camera_link">
+      <origin xyz="0.035 0 0" rpy="0 0 0"/>
+    </xacro:camera_macro>
 
     <gazebo reference="base_fixed_link">
       <material>Gazebo/Orange</material>
@@ -88,5 +87,7 @@
         <legacyModeNS>true</legacyModeNS>
       </plugin>
     </gazebo>
+
+    <xacro:include filename="$(find hector_quadrotor_gazebo)/urdf/quadrotor_plugins.gazebo.xacro" />
 
 </robot>
