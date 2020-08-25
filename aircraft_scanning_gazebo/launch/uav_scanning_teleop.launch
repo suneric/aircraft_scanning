@@ -1,9 +1,5 @@
 <?xml version="1.0"?>
 <launch>
-  <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="rs435_color_frame_pub" args="0 0.015 0 0 0 0 /rs435_link /rs435_color_frame" />
-  <node pkg="tf2_ros" type="static_transform_publisher" name="rs435_cam_color_optical_frame_pub" args="0 0 0 -1.57 0 -1.57  /rs435_color_frame /rs435_color_optical_frame" />
-  <node pkg="tf2_ros" type="static_transform_publisher" name="rs435_depth_frame_pub" args="0 0 0 0 0 0 /rs435_link /rs435_depth_frame" />
-  <node pkg="tf2_ros" type="static_transform_publisher" name="rs435_depth_optical_frame_pub" args="0 0 0 -1.57 0 -1.57  /rs435_depth_frame /rs435_depth_optical_frame" /> -->
   <!-- load world with aircraft -->
   <include file="$(find aircraft_scanning_gazebo)/launch/airliner757.launch"/>
 
@@ -13,9 +9,9 @@
     <arg name="y" value="-30.0"/>
     <arg name="z" value="0.3"/>
   </include>
-  
+
   <!--add visualize and data process -->
-  <include file="$(find aircraft_scanning_control)/launch/uav_scanning_data.launch"/>
+  <include file="$(find aircraft_scanning_control)/launch/uav_manual_scanning.launch"/>
 
   <!--add logitech gamepad controller-->
   <include file="$(find aircraft_scanning_teleop)/launch/logitech_gamepad.launch" />

@@ -10,7 +10,7 @@
     <arg name="z" value="0.1"/>
   </include>
 
-  <!--inlcude auto scanning controller-->
-  <!-- <include file="$(find aircraft_scanning_control)/launch/uav_auto_scanning.launch"/> -->
+  <!--add visualize and data process -->
+  <include file="$(find aircraft_scanning_control)/launch/scanning_pointcloud.launch"/>
 
 </launch>

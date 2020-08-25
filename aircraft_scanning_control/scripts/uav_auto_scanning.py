@@ -4,19 +4,18 @@ import numpy as np
 from math import *
 from geometry_msgs.msg import Pose
 
-from planner import trajectory_plan
-from trajectory import trajectory_defined
 import transform
-from controller import uav_cam_controller
-from camera import realsense_d435
-from image import depth_img, color_img
-from pointcloud import data_capture
+from uav_trajectory import trajectory_defined
+from uav_controller import uav_cam_controller
+
+from sensor.camera import realsense_d435
+from sensor.image import depth_img, color_img
+from sensor.pointcloud import data_capture
 
 import os
 import glob
 import struct
 import ctypes
-
 
 class auto_scanning:
     def __init__(self,controller,camera,data_processor):

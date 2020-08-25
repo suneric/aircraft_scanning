@@ -60,8 +60,6 @@ class realsense_d435:
         return color_img(self.cv_color)
     def point_cloud(self):
         return pc2.read_points(self.points,skip_nans=True)
-        #,field_names=('x','y','z','rgb'))
-        # data is a generator
 
     # private functions
     def _point_callback(self,data):
@@ -92,8 +90,3 @@ class realsense_d435:
                 img.show(self.center_dist)
             except CvBridgeError as e:
                 print(e)
-
-if __name__ == '__main__':
-    rospy.init_node("uav_scanning_image", anonymous=True, log_level=rospy.INFO)
-    camera = realsense_d435()
-    rospy.spin()

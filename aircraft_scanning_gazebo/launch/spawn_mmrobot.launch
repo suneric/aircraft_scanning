@@ -6,7 +6,6 @@
   <arg name="gui" default="true"/>
   <arg name="headless" default="false"/>
   <arg name="debug" default="false"/>
-  <arg name="name" default="mmrobot"/>
   <arg name="hardware_interface" default="PositionJointInterface" />
   <arg name="tf_prefix" default="$(optenv ROS_NAMESPACE)"/>
   <arg name="x" default="5.0"/>
@@ -15,20 +14,25 @@
   <arg name="model" default="$(find aircraft_scanning_description)/urdf/mobile_manipulator.urdf.xacro"/>
 
   <!--spawn mobile robot-->
-  <param name="robot_description" command="$(find xacro)/xacro --inorder '$(arg model)' hardware_interface:=$(arg hardware_interface) robot_name:=$(arg name)" />
+  <param name="robot_description" command="$(find xacro)/xacro --inorder '$(arg model)' hardware_interface:=$(arg hardware_interface)" />
   <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
        args="-param robot_description
           -urdf
           -x $(arg x)
           -y $(arg y)
           -z $(arg z)
-          -model $(arg name)" />
+          -model iiwa" />
 
-  <include file="$(find iiwa_control)/launch/iiwa_control.launch">
-    <arg name="hardware_interface" value="$(arg hardware_interface)" />
-    <arg name="controllers" value="joint_state_controller $(arg hardware_interface)_trajectory_controller" />
-    <arg name="robot_name" value="$(arg name)" />
-    <arg name="model" value="iiwa14" />
+  <include file="$(find aircraft_scanning_control)/launch/ugv_manipulator_control.launch">
+      <arg name="hardware_interface" value="$(arg hardware_interface)" />
+      <arg name="controllers" value="joint_state_controller
+        $(arg hardware_interface)_J1_controller
+        $(arg hardware_interface)_J2_controller
+        $(arg hardware_interface)_J3_controller
+        $(arg hardware_interface)_J4_controller
+        $(arg hardware_interface)_J5_controller
+        $(arg hardware_interface)_J6_controller
+        $(arg hardware_interface)_J7_controller"/>
   </include>
 
 </launch>

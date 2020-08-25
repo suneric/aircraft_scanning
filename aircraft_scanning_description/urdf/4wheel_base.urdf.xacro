@@ -293,6 +293,7 @@
           <covariance_x>0.0001</covariance_x>
           <covariance_y>0.0000</covariance_y>
           <covariance_yaw>0.01</covariance_yaw>
+          <legacyModeNS>true</legacyModeNS>
         </plugin>
       </gazebo>
 

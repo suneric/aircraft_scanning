@@ -1,4 +1,0 @@
-<launch>
-	<node pkg="aircraft_scanning_control" type="pointcloud.py" name="uav_scanning_data" output="screen">
-  </node>
-</launch>

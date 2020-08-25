@@ -21,6 +21,7 @@ some dependencies for gazebo-ros-pkgs are required.
   - ros-kinetic-joint-state-controller
   - ros-kinetic-controller-manager
   - ros-kinetic-geographic-msgs   
+  - ros-kinetic-joint-trajectory-controller
 2. install point cloud library (by default pcl 1.7.2 on ubuntu 16.04) and python-pcl
 3. install [opencv](https://docs.opencv.org/master/d7/d9f/tutorial_linux_install.html) and opencv-python
 4. install hector_quadrotor and related packages
