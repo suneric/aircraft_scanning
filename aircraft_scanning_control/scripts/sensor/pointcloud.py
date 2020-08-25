@@ -2,8 +2,6 @@
 import rospy
 import numpy as np
 from math import *
-
-import transform
 import pcl
 from camera import realsense_d435
 
@@ -19,15 +17,10 @@ class data_capture:
     # scan and point could process
     # input point could, matrix of camera to global
     # pose: [quadrotor_pose, camera_joint]
-    def scan_and_save(self,pose):
+    def scan_and_save(self,mat):
         pc = self.camera.point_cloud()
         if pc == None:
             return
-
-        # transform of point cloud to world frame
-        q2c_mat = transform.quadrotor2camera(pose[0], pose[1])
-        c2p_mat = transform.camera2pointcloud()
-        mat = np.dot(q2c_mat,c2p_mat)
 
         #print(mat)
         cloud = self._cloud_process(pc,mat)

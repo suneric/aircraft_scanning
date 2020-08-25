@@ -60,7 +60,10 @@ class auto_scanning:
     def _fly_callback(self):
         print("reached.")
         current_pose = self._current_pose()
-        self.data.scan_and_save(current_pose)
+        q2c_mat = transform.quadrotor2camera(current_pose[0],current_pose[1])
+        c2p_mat = transform.camera2pointcloud()
+        mat = np.dot(q2c_mat,c2p_mat)
+        self.data.scan_and_save(mat)
         # self.trajectory.explore_views(current_pose)
         self.status = 'ready'
 
