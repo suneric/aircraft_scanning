@@ -3,6 +3,7 @@ import rospy
 import numpy as np
 import time
 
+import transform
 from geometry_msgs.msg import PoseStamped
 from gazebo_msgs.msg import ModelStates
 from control_msgs.msg import JointControllerState
@@ -27,6 +28,10 @@ class uav_cam_controller:
         self.quadrotor_pose = None
         self.b_take_off = False
         self.goal_pose = None
+
+    def transform_q2c(self):
+        mat = transform.quadrotor2camera(self.quadrotor_pose,self.camerapose)
+        return mat
 
     def camera_pose(self):
         return self.camerapose

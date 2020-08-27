@@ -18,8 +18,8 @@ if __name__ == '__main__':
     for f in files:
         print("remove ", f)
         os.remove(f)
-
     rospy.init_node("uav_manual_scannig", anonymous=True, log_level=rospy.INFO)
+    rospy.sleep(2)
     controller = uav_cam_controller()
     camera = realsense_d435()
     pc_capture = data_capture(camera,temp_folder)
@@ -28,13 +28,8 @@ if __name__ == '__main__':
         while not rospy.is_shutdown():
             key_input = raw_input("please enter 'space' for cature data:\n")
             if (key_input == ''):
-                pose = controller.uav_pose()
-                angle = controller.camera_pose()
-                # transform of point cloud to world frame
-                q2c_mat = transform.quadrotor2camera(pose,angle)
-                c2p_mat = transform.camera2pointcloud()
-                mat = np.dot(q2c_mat,c2p_mat)
-                pc_capture.scan_and_save([pose,angle])
+                mat = controller.transform_q2c()
+                pc_capture.scan_and_save(mat)
             rate.sleep()
     except rospy.ROSInterruptException:
         pass

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import rospy
 import numpy as np
-import transform
 from ugv_controller import ugv_arm_controller
 from sensor.pointcloud import data_capture
 from sensor.camera import realsense_d435
@@ -19,16 +18,22 @@ if __name__ == '__main__':
         os.remove(f)
 
     rospy.init_node("ugv_manual_scannig", anonymous=True, log_level=rospy.INFO)
+    rospy.sleep(1) # wait for other node ready, such a gazebo
     camera = realsense_d435()
     pc_capture = data_capture(camera,temp_folder)
-    ugv_controller = ugv_arm_controller()
+    controller = ugv_arm_controller()
+    rospy.sleep(1) #
     rate = rospy.Rate(10)
     try:
         while not rospy.is_shutdown():
-            key_input = raw_input("please enter 'space' for cature data:\n")
+            if not controller.is_initialized():
+                controller.initialize()
+
+            key_input = raw_input("press 'enter' for cature data:\n")
             if (key_input == ''):
-                ugv_controller.move_to([0,1.57,0,0,0,0,1.57])
-                #pc_capture.scan_and_save(mat)
+                mat = controller.transform_m2c()
+                pc_capture.scan_and_save(mat)
+
             rate.sleep()
     except rospy.ROSInterruptException:
         pass

@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 import rospy
 import numpy as np
+
 import time
 
 from geometry_msgs.msg import Twist
 from gazebo_msgs.msg import ModelStates
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64
+import transform
 
 class arm_controller:
     def __init__(self):
@@ -23,7 +25,7 @@ class arm_controller:
     def _arm_callback(self,data):
         self.arm_pose = data.position
 
-    def joint_pos(self):
+    def pose(self):
         return self.arm_pose
 
     def move(self,joint_positions):
@@ -63,10 +65,23 @@ class ugv_arm_controller:
     def __init__(self):
         self.ugv = ugv_controller()
         self.arm = arm_controller()
+        self.initialized = False
 
-    def move_to(self,arm_pose):
+    def is_initialized(self):
+        return self.initialized
+
+    def initialize(self):
+        self.initialized = True
+        print("initialize mobile manipulator.")
+        self.arm.move([0.0,1.57,0.0,0.0,0.0,-1.57,0.0])
+        self.ugv.move(0,0)
+
+    def move_ugv(self, ugv_pos):
+        self.ugv.move(ugv_pose)
+
+    def move_arm(self, arm_pose):
         self.arm.move(arm_pose)
-        ugv_pose = self.ugv.pose()
-        arm_pose = self.arm.joint_pos()
-        print('ugv', ugv_pose)
-        print('arm', arm_pose)
+
+    def transform_m2c(self):
+        mat = transform.mobilebase2camera(self.ugv.pose(), self.arm.pose())
+        return mat

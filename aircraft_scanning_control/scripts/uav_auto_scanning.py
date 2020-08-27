@@ -59,10 +59,7 @@ class auto_scanning:
 
     def _fly_callback(self):
         print("reached.")
-        current_pose = self._current_pose()
-        q2c_mat = transform.quadrotor2camera(current_pose[0],current_pose[1])
-        c2p_mat = transform.camera2pointcloud()
-        mat = np.dot(q2c_mat,c2p_mat)
+        mat = self.controller.transform_q2c()
         self.data.scan_and_save(mat)
         # self.trajectory.explore_views(current_pose)
         self.status = 'ready'
@@ -74,15 +71,7 @@ class auto_scanning:
 
     def _initial_callback(self):
         print("initialized.")
-        # self.trajectory.reset(self._current_pose())
         self.takeoff = True
-        # depth = self.camera.depth_image()
-        # depth.show()
-
-    def _current_pose(self):
-        pose = self.controller.uav_pose()
-        angle = self.controller.camera_pose()
-        return [pose, angle]
 
     def _initial_pose(self,x,y,z,yaw,angle):
         pose = Pose()
@@ -108,7 +97,7 @@ if __name__ == '__main__':
 
     # initialize ros node
     rospy.init_node("uav_auto_scanning", anonymous=True, log_level=rospy.INFO)
-
+    rospy.sleep(2)
     controller = uav_cam_controller()
     camera = realsense_d435()
     pc_capture = data_capture(camera,temp_folder)

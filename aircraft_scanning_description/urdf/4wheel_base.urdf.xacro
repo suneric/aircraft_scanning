@@ -25,7 +25,7 @@
 
     <xacro:property name="support_x" value="1.0" />
     <xacro:property name="support_y" value="0.8" />
-    <xacro:property name="support_z" value="0.6" />
+    <xacro:property name="support_z" value="0.5" />
     <xacro:property name="support_m" value="30" />
 
     <!-- main triwheeler link -->
@@ -309,7 +309,7 @@
       </gazebo>
 
       <gazebo reference="link_fbumper">
-        <material>Gazebo/DarkGrey</material>
+        <material>Gazebo/Yellow</material>
       </gazebo>
 
       <gazebo reference="link_rbumper">

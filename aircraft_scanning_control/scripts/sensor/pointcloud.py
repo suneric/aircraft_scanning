@@ -38,7 +38,8 @@ class data_capture:
             x,y,z,rgb=data[:4]
             if self._in_box(x,y,z,self._bbox()):
                 tp = np.dot(mat,np.array([x,y,z,1])) # transform point
-                point_list.append([tp[0],tp[1],tp[2],rgb])
+                ## tp is a 1x4 matrix
+                point_list.append([tp[0,0],tp[0,1],tp[0,2],rgb])
         if len(point_list) > 0:
             pcl_cloud = pcl.PointCloud_PointXYZRGB()
             pcl_cloud.from_list(point_list)
