@@ -179,11 +179,12 @@ iiwa:
     action_monitor_rate: 30            # Override default
     stop_trajectory_duration: 0        # Override default
 
+# need to be adjusted
 gazebo_ros_control/pid_gains:
-  iiwa_joint_1: {p: 500,  d: 30, i: 15, i_clamp: 30}
-  iiwa_joint_2: {p: 200,  d: 10, i: 10, i_clamp: 30}
-  iiwa_joint_3: {p: 65,  d: 10, i: 15, i_clamp: 30}
-  iiwa_joint_4: {p: 31,  d: 7, i: 12, i_clamp: 30}
-  iiwa_joint_5: {p: 23,  d: 3, i: 5, i_clamp: 30}
-  iiwa_joint_6: {p: 13,  d: 3, i: 3, i_clamp: 30}
-  iiwa_joint_7: {p: 17,  d: 2, i: 2.5, i_clamp: 10}
+  iiwa_joint_1: {p: 100,  d: 10, i: 1, i_clamp: 30}
+  iiwa_joint_2: {p: 100,  d: 10, i: 1, i_clamp: 30}
+  iiwa_joint_3: {p: 100,  d: 10, i: 1, i_clamp: 30}
+  iiwa_joint_4: {p: 50,  d: 5, i: 1, i_clamp: 30}
+  iiwa_joint_5: {p: 25,  d: 2, i: 1, i_clamp: 30}
+  iiwa_joint_6: {p: 5,  d: 1, i: 1, i_clamp: 30}
+  iiwa_joint_7: {p: 5,  d: 1, i: 1, i_clamp: 10}

@@ -11,17 +11,17 @@ from std_msgs.msg import Float64
 class arm_controller:
     def __init__(self):
         self.arm_pose = None
-        self.joint_1_pub = rospy.Publisher('iiwa/PositionJointInterface_J1_Controller/command', Float64, queue_size=1)
-        self.joint_2_pub = rospy.Publisher('iiwa/PositionJointInterface_J2_Controller/command', Float64, queue_size=1)
-        self.joint_3_pub = rospy.Publisher('iiwa/PositionJointInterface_J3_Controller/command', Float64, queue_size=1)
-        self.joint_4_pub = rospy.Publisher('iiwa/PositionJointInterface_J4_Controller/command', Float64, queue_size=1)
-        self.joint_5_pub = rospy.Publisher('iiwa/PositionJointInterface_J5_Controller/command', Float64, queue_size=1)
-        self.joint_6_pub = rospy.Publisher('iiwa/PositionJointInterface_J6_Controller/command', Float64, queue_size=1)
-        self.joint_7_pub = rospy.Publisher('iiwa/PositionJointInterface_J7_Controller/command', Float64, queue_size=1)
+        self.joint_1_pub = rospy.Publisher('iiwa/PositionJointInterface_J1_controller/command', Float64, queue_size=1)
+        self.joint_2_pub = rospy.Publisher('iiwa/PositionJointInterface_J2_controller/command', Float64, queue_size=1)
+        self.joint_3_pub = rospy.Publisher('iiwa/PositionJointInterface_J3_controller/command', Float64, queue_size=1)
+        self.joint_4_pub = rospy.Publisher('iiwa/PositionJointInterface_J4_controller/command', Float64, queue_size=1)
+        self.joint_5_pub = rospy.Publisher('iiwa/PositionJointInterface_J5_controller/command', Float64, queue_size=1)
+        self.joint_6_pub = rospy.Publisher('iiwa/PositionJointInterface_J6_controller/command', Float64, queue_size=1)
+        self.joint_7_pub = rospy.Publisher('iiwa/PositionJointInterface_J7_controller/command', Float64, queue_size=1)
         self.arm_sub = rospy.Subscriber('iiwa/joint_states', JointState, self._arm_callback)
 
     def _arm_callback(self,data):
-        self.arm_pose = data.positions
+        self.arm_pose = data.position
 
     def joint_pos(self):
         return self.arm_pose

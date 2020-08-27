@@ -17,6 +17,7 @@ sudo apt-get install gazebo9
 some dependencies for gazebo-ros-pkgs are required.
   - ros-kinetic-gazebo-ros-pkgs
   - ros-kinetic-gazebo-ros-control
+  - ros-kineric-gazebo-ros-controllers
   - ros-kinetic-effort-controllers
   - ros-kinetic-joint-state-controller
   - ros-kinetic-controller-manager
