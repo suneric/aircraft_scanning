@@ -11,6 +11,6 @@
   </include>
 
   <!--add visualize and data process -->
-  <include file="$(find aircraft_scanning_control)/launch/ugv_manual_scanning.launch"/>
+  <include file="$(find aircraft_scanning_control)/launch/ugv_auto_scanning.launch"/>
 
 </launch>

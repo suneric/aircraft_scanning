@@ -1,4 +1,0 @@
-<launch>
-	<node name="ugv_manual_scanning" pkg="aircraft_scanning_control" type="ugv_manual_scanning.py"  output="screen">
-  </node>
-</launch>

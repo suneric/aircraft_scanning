@@ -8,6 +8,7 @@ import os
 import glob
 import struct
 import ctypes
+from ugv_trajectory import trajectory_defined
 
 if __name__ == '__main__':
     # clean folder for save point cloud file
@@ -22,17 +23,23 @@ if __name__ == '__main__':
     camera = realsense_d435()
     pc_capture = data_capture(camera,temp_folder)
     controller = ugv_arm_controller()
+    trajectory = trajectory_defined()
     rospy.sleep(1) #
     rate = rospy.Rate(10)
+
     try:
         while not rospy.is_shutdown():
             if not controller.is_initialized():
                 controller.initialize()
 
-            key_input = raw_input("press 'enter' for cature data:\n")
+            key_input = raw_input("press 'enter' to start caturing data:\n")
             if (key_input == ''):
-                mat = controller.transform_m2c()
-                pc_capture.scan_and_save(mat)
+                goal = trajectory.next_pose()
+                while goal != None:
+                    controller.drive_ugv(goal)
+                    mat = controller.transform_m2c()
+                    pc_capture.scan_and_save(mat)
+                    goal = trajectory.next_pose()
 
             rate.sleep()
     except rospy.ROSInterruptException:
