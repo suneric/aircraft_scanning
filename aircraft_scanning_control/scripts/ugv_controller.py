@@ -46,7 +46,7 @@ class ugv_controller:
         self.ugv_sub = rospy.Subscriber('/gazebo/model_states', ModelStates, self._ugv_callback)
         self.goal = None
         self.status = 'stop' # 'moving'
-        self.max_speeds = [5.0,2*pi]
+        self.max_speeds = [5.0,pi]
 
     def _ugv_callback(self, data):
         index = data.name.index('iiwa')
@@ -94,11 +94,11 @@ class ugv_controller:
             # step 1: pre rotate
             (px,py,yaw) = self.eular_pose()
             angle = self._direction2goal(px,py,gx,gy)
-            yaw_err = angle-yaw
+            yaw_err = self._yaw2goal(yaw,angle)
             while not abs(yaw_err) < tolerance:
                 self._rotate_controller(yaw_err)
                 (px,py,yaw) = self.eular_pose()
-                yaw_err = angle-yaw
+                yaw_err = self._yaw2goal(yaw,angle)
                 #print("pre rotate yaw_err: ", yaw_err)
             self.stop()
 
@@ -107,17 +107,17 @@ class ugv_controller:
             v,vz,dist_i,yaw_i = 1.0,pi,0.0,0.0
             while not abs(dist_err) < 10.0*tolerance:
                 v,vz,dist_i,yaw_i = self._pid_controller(dist_err,yaw_err,v,vz,dist_i,yaw_i)
-                dist_err, yaw_err = self._distance2goal(self.eular_pose(),self.goal)
                 print("errors:", dist_err,yaw_err,v,vz)
+                dist_err, yaw_err = self._distance2goal(self.eular_pose(),self.goal)
             self.stop()
 
             # step 3: post rotate
             (px,py,yaw) = self.eular_pose()
-            yaw_err = gyaw-yaw
+            yaw_err = self._yaw2goal(yaw,gyaw)
             while not abs(yaw_err) < tolerance:
                 self._rotate_controller(yaw_err)
                 (px,py,yaw) = self.eular_pose()
-                yaw_err = gyaw - yaw
+                yaw_err = self._yaw2goal(yaw,gyaw)
                 #print("post rotate yaw_err: ", yaw_err)
             self.stop()
 
@@ -127,9 +127,10 @@ class ugv_controller:
     # PID control for ugv drive
     # the yaw angle is in range of [-pi,pi],
     # it is not continuous when its change from pi to -pi
+    # so the angluar speed should not be too large
     def _pid_controller(self,dist_err,yaw_err,v,vz,dist_i,yaw_i,time_duration=0.001):
         Kp_v,Ki_v,Kd_v = 5,0.0,0.1
-        Kp_z,Ki_z,Kd_z = 10,0.0,0.1
+        Kp_z,Ki_z,Kd_z = 5,0.0,0.1
         dist_i += time_duration*dist_err
         yaw_i += time_duration*yaw_err
         v = Kp_v*dist_err + Ki_v*dist_i + Kd_v*v
@@ -141,14 +142,10 @@ class ugv_controller:
 
     # rotate from a yaw to goal yaw
     def _rotate_controller(self,yaw_err,time_duration=0.001):
-        if yaw_err > 0 and yaw_err <= pi:
-            self.move(0, self.max_speeds[1])
-        elif yaw_err > pi and yaw_err < 2*pi:
+        if yaw_err > 0:
+            self.move(0,self.max_speeds[1])
+        elif yaw_err < 0:
             self.move(0,-self.max_speeds[1])
-        elif yaw_err < 0 and yaw_err > -pi:
-            self.move(0,-self.max_speeds[1])
-        elif yaw_err <= -pi and yaw_err >= -2*pi:
-            self.move(0, self.max_speeds[1])
         else:
             self.move(0, 0)
         rospy.sleep(time_duration)
@@ -162,9 +159,18 @@ class ugv_controller:
             else:
                 direction = 0.0
         else:
-            print(gy-py,gx-px)
             direction = math.atan2((gy-py),(gx-px))
         return direction
+
+    def _yaw2goal(self,yaw,gyaw):
+        # err in range of [-pi,pi]
+        err = gyaw-yaw
+        if err > pi:
+            return err-2*pi
+        elif err < -pi:
+            return err+2*pi
+        else:
+            return err
 
     # distance from pose to target
     def _distance2goal(self,pose,goal):
@@ -172,8 +178,8 @@ class ugv_controller:
         (gx,gy,gyaw) = goal
         dist = math.sqrt((gx-px)*(gx-px)+(gy-py)*(gy-py))
         direction = self._direction2goal(px,py,gx,gy)
-        angle = direction-yaw
-        print("direction: ", direction, "yaw: ", yaw)
+        angle = self._yaw2goal(yaw,direction)
+        #print("direction: ", direction, "yaw: ", yaw)
         return dist, angle
 
     def _velocity_bounded(self, v,vz):

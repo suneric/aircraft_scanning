@@ -26,14 +26,15 @@ class trajectory_defined:
 
     def _create_trajectory(self):
         self.trajectory.append((0,-28,0.5*pi))
-        self._create_updownpath()
+        self._create_updownpath([-27,-22])
+        self._create_updownpath([-20,28])
 
-    def _create_updownpath(self):
+    def _create_updownpath(self, y_range):
         x = 1
-        offset = 1.5
+        offset = 1.25
         i = 0
-        y = -27
-        while y < 30:
+        y = y_range[0]
+        while y < y_range[1]:
             if np.mod(i,2) == 0:
                 self.trajectory.append((x,y,0.5*pi))
                 self.trajectory.append((-x,y,0.5*pi))
