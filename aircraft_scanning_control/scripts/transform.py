@@ -15,7 +15,7 @@ def mobilebase2camera(ugv_pos, arm_pos):
     return mat0*mat1*mat2*mat3
 
 def mobile_base_to_arm():
-    return matrix([[1,0,0,0],
+    return matrix([[1,0,0,-0.35],
                      [0,1,0,0],
                      [0,0,1,0.7], # offset 0.7 meters in z
                      [0,0,0,1]])

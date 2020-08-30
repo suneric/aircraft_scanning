@@ -3,6 +3,7 @@ import rospy
 import numpy as np
 import os
 import sys
+from math import *
 
 class trajectory_defined:
     def __init__(self):
@@ -15,22 +16,29 @@ class trajectory_defined:
 
     def next_pose(self):
         if self.completed():
+            print("done.")
             return None
         else:
             pose = self.trajectory[self.index]
             self.index = self.index + 1
+            print("traverse to ", pose)
             return pose
 
     def _create_trajectory(self):
-        self.trajectory.append((0,-28,1.57))
-        self.trajectory.append((0,-27,1.57))
-        self.trajectory.append((-2,-27,3.14))
-        self.trajectory.append((-4,-27,3.14))
-        self.trajectory.append((-4,-26,1.57))
-        self.trajectory.append((-2,-26,0))
-        self.trajectory.append((0,-26,0))
-        self.trajectory.append((2,-26,0))
-        self.trajectory.append((4,-26,0))
-        self.trajectory.append((4,-25,1.57))
-        self.trajectory.append((2,-25,3.14))
-        self.trajectory.append((0,-25,3.14))
+        self.trajectory.append((0,-28,0.5*pi))
+        self._create_updownpath()
+
+    def _create_updownpath(self):
+        x = 1
+        offset = 1.5
+        i = 0
+        y = -27
+        while y < 30:
+            if np.mod(i,2) == 0:
+                self.trajectory.append((x,y,0.5*pi))
+                self.trajectory.append((-x,y,0.5*pi))
+            else:
+                self.trajectory.append((-x,y,0.5*pi))
+                self.trajectory.append((x,y,0.5*pi))
+            i += 1
+            y += offset

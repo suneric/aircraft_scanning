@@ -25,7 +25,7 @@ if __name__ == '__main__':
     controller = ugv_arm_controller()
     trajectory = trajectory_defined()
     rospy.sleep(1) #
-    rate = rospy.Rate(10)
+    rate = rospy.Rate(100)
 
     try:
         while not rospy.is_shutdown():

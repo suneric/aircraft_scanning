@@ -11,7 +11,7 @@
     <xacro:include filename="$(find iiwa_description)/urdf/materials.xacro" />
     <xacro:include filename="$(find iiwa_description)/urdf/iiwa14.xacro"/>
     <xacro:iiwa14 hardware_interface="$(arg hardware_interface)" robot_name="iiwa" parent="link_support">
-      <origin xyz="0 0 0.5" rpy="0 0 0" />
+      <origin xyz="-0.35 0 0.5" rpy="0 0 0" />
       <xacro:property name="safety_controller_k_pos" value="100" />
       <xacro:property name="safety_controller_k_vel" value="2" />
       <xacro:property name="joint_damping" value="1" />
