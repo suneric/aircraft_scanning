@@ -26,20 +26,23 @@ class trajectory_defined:
 
     def _create_trajectory(self):
         self.trajectory.append((0,-28,0.5*pi))
-        self._create_updownpath([-27,-22])
-        self._create_updownpath([-20,28])
+        self._create_updownpath([-27,-22.5],[1.0,-1.0])
+        # self._create_updownpath([-20,-8],[1.0,-1.0])
+        # self._create_updownpath([-8,8],[1.5,0,-1.5])
+        # self._create_updownpath([8,25],[1.0,-1.0])
+        # self.trajectory.append((0,26,0.5*pi))
+        # self.trajectory.append((0,27,0.5*pi))
 
-    def _create_updownpath(self, y_range):
-        x = 1
-        offset = 1.25
+    def _create_updownpath(self, y_range, x_pos, offset=1.0):
         i = 0
         y = y_range[0]
         while y < y_range[1]:
             if np.mod(i,2) == 0:
-                self.trajectory.append((x,y,0.5*pi))
-                self.trajectory.append((-x,y,0.5*pi))
+                for x in x_pos:
+                    self.trajectory.append((x,y,0.5*pi))
             else:
-                self.trajectory.append((-x,y,0.5*pi))
-                self.trajectory.append((x,y,0.5*pi))
+                for x in reversed(x_pos):
+                    self.trajectory.append((x,y,0.5*pi))
+
             i += 1
             y += offset

@@ -1,11 +1,90 @@
 #!/usr/bin/env python
 import numpy as np
 from numpy import pi, sqrt, cos, sin, arctan2, array, matrix
+from numpy.linalg import norm
 from geometry_msgs.msg import Pose
 from tf.transformations import quaternion_from_matrix, quaternion_matrix
 from math import *
 
 # transform for mobile manipulator scanning
+
+def valid_catersian_pose(arm_pose):
+    pE0 = matrix([[arm_pose.position.x],
+                  [arm_pose.position.y],
+                  [arm_pose.position.z]])
+    qE0 = array([arm_pose.orientation.x,
+                 arm_pose.orientation.y,
+                 arm_pose.orientation.z,
+                 arm_pose.orientation.w])
+    l02 = 0.36
+    l24 = 0.42
+    l46 = 0.4
+    l6E = 0.126
+    pE6 = matrix([[0.0], [0.0], [l6E]])
+    p20 = matrix([[0.0], [0.0], [l02]])
+
+    RE0 = matrix(quaternion_matrix(qE0)[:3,:3])
+    p6E0 = RE0 * pE6
+    p60 = pE0 - p6E0
+    p260 = p60 - p20
+
+    s = norm(p260)
+    if s > self.l24 + self.l46:
+      print('invalid pose command')
+      return False
+
+    return True
+
+def catersian_to_joint(arm_pose):
+    t = 7*[0.0]
+    pE0 = matrix([[arm_pose.position.x],
+                  [arm_pose.position.y],
+                  [arm_pose.position.z]])
+    qE0 = array([arm_pose.orientation.x,
+                 arm_pose.orientation.y,
+                 arm_pose.orientation.z,
+                 arm_pose.orientation.w])
+    l02 = 0.36
+    l24 = 0.42
+    l46 = 0.4
+    l6E = 0.126
+    pE6 = matrix([[0.0], [0.0], [l6E]])
+    p20 = matrix([[0.0], [0.0], [l02]])
+
+    RE0 = matrix(quaternion_matrix(qE0)[:3,:3])
+    p6E0 = RE0 * pE6
+    p60 = pE0 - p6E0
+    p260 = p60 - p20
+
+    s = norm(p260)
+    if s > self.l24 + self.l46:
+      print('invalid pose command')
+      return
+
+    (tys, tzs) = rr(p260)
+    tp24z0 = 1/(2.0 * s) * (self.l24**2 - self.l46**2 + s**2)
+    tp240 = matrix([[-sqrt(self.l24**2 - tp24z0**2)], [0.0], [tp24z0]])
+    p240 = Ryz(tys, tzs) * Rz(self.tr) * tp240
+    (t[1], t[0]) = rr(p240)
+
+    R20 = Ryz(t[1], t[0])
+    p40 = p20 + p240
+    p460 = p60 - p40
+    p462 = R20.T * p460
+    (t[3], t[2]) = rr(p462)
+    t[3] = -t[3]
+
+    R42 = Ryz(-t[3], t[2])
+    R40 = R20 * R42
+    p6E4 = R40.T * p6E0
+    (t[5], t[4]) = rr(p6E4)
+
+    R64 = Ryz(t[5], t[4])
+    R60 = R40 * R64
+    RE6 = R60.T * RE0
+    t[6] = arctan2(RE6[1,0], RE6[0,0])
+
+    return t
 
 def mobilebase2camera(ugv_pos, arm_pos):
     mat0 = cartesian_to_matrix(ugv_pos)
@@ -51,6 +130,33 @@ def Hrrt(ty, tz, l):
                  [cy * sz, cz, sy * sz, 0.0],
                  [-sy, 0.0, cy, l],
                  [0.0, 0.0, 0.0, 1.0]])
+
+def rr(p):
+  ty = arctan2(sqrt(p[0,0]**2 + p[1,0]**2), p[2,0])
+  tz = arctan2(p[1,0], p[0,0])
+
+  if tz < -pi/2.0:
+    ty = -ty
+    tz += pi
+  elif tz > pi/2.0:
+    ty = -ty
+    tz -= pi
+
+  return (ty, tz)
+
+def Rz(tz):
+  (cz, sz) = trigonometry(tz)
+  return matrix([[ cz, -sz, 0.0],
+                 [ sz,  cz, 0.0],
+                 [0.0, 0.0, 1.0]])
+
+def Ryz(ty, tz):
+  (cy, sy) = trigonometry(ty)
+  (cz, sz) = trigonometry(tz)
+  return matrix([[cy * cz, -sz, sy * cz],
+                 [cy * sz, cz, sy * sz],
+                 [-sy, 0.0, cy]])
+
 
 # transform for quadrotor scanning
 def quadrotor2camera(pose, angle):

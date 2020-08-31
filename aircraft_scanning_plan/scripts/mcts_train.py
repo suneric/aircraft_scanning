@@ -185,12 +185,12 @@ class MonteCarloTreeSearch(object):
 # main
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--sn', type=int, default=50)
-    parser.add_argument('--ad', type=int, default=8)
-    parser.add_argument('--tc', type=float, default=0.95)
-    parser.add_argument('--cp', type=float, default=0.38)
-    parser.add_argument('--dr', type=float, default=0.998)
-    parser.add_argument('--fe', type=float, default=0.1)
+    parser.add_argument('--sn', type=int, default=50) # simulation count
+    parser.add_argument('--ad', type=int, default=8) # action dimenstion, how many neighbors
+    parser.add_argument('--tc', type=float, default=0.95) # target coverage
+    parser.add_argument('--cp', type=float, default=0.38) # control param
+    parser.add_argument('--dr', type=float, default=0.998) # decay rate
+    parser.add_argument('--fe', type=float, default=0.1) # final epsilon
     return parser.parse_args()
 
 if __name__ == "__main__":
