@@ -38,23 +38,6 @@ namespace asv3d
     double ori_w;
   };
 
-  struct ViewPoint {
-    ViewPoint(){quadrotor_pose = Cartesion();camera_angle=0.0;}
-    ViewPoint(const ViewPoint& vp)
-    {
-      quadrotor_pose = vp.quadrotor_pose;
-      camera_angle = vp.camera_angle;
-    }
-    ViewPoint& operator=(const ViewPoint& vp)
-    {
-      quadrotor_pose = vp.quadrotor_pose;
-      camera_angle = vp.camera_angle;
-      return *this;
-    }
-    Cartesion quadrotor_pose;
-    double camera_angle; // camera joint angle
-  };
-
   class PCLViewPoint{
   public:
     void GenerateCameraPositions(
@@ -62,50 +45,34 @@ namespace asv3d
       double distance,
       const Eigen::Vector3f& refNormal,
       const std::vector<double>& bbox,
+      std::vector<Eigen::Affine3f>& cameras
+    );
+    WSPointCloudPtr CameraViewVoxels(
+      const PCLOctree& tree,
+      const Eigen::Affine3f& camera,
+      std::vector<int>& voxelInices
+    );
+    void SaveToFile(
+      const std::string& output,
       std::vector<Eigen::Affine3f>& cameras,
-      std::vector<ViewPoint>& vps);
-
-
-    WSPointCloudPtr CameraViewVoxels(const PCLOctree& tree, const Eigen::Affine3f& camera, std::vector<int>& voxelInices);
-    void Save2File(const std::string& output,
-                   std::vector<ViewPoint>& vps,
-                   std::map<int, std::vector<int> >& voxelMap);
-    void LoadTrajectory(const std::string& input, std::vector<ViewPoint>& vps);
-    Eigen::Affine3f ViewPoint2CameraPose(const ViewPoint& vp);
-
-    bool FilterViewPoint(const PCLOctree& tree, const Eigen::Affine3f& camera, const ViewPoint& viewpoint);
+      std::map<int, std::vector<int> >& voxelMap
+    );
+    void LoadFromFile(
+      const std::string& input,
+      std::vector<Eigen::Affine3f>& cameras
+    );
 
   private:
-    bool IsVisibleVoxel(const PCLOctree& tree, const Eigen::Vector3f& camera, const Eigen::Vector3f& centroid);
-
-    bool CameraPosition(const PCLOctree& tree,
-                        const Eigen::Vector3f& target,
-                        const Eigen::Vector3f& normal,
-                        double distance,
-                        Eigen::Affine3f& camera,
-                        ViewPoint& vp);
-
-    Eigen::Affine3f CameraPose(const Eigen::Vector3f& center,
-                               const Eigen::Vector3f& normal,
-                               double& alpha,
-                               double& beta);
-    ViewPoint CreateViewPoint(const Eigen::Affine3f& camera,double alpha,double beta);
-    void Matrix2Cartesion(const Eigen::Matrix4f& mat, Cartesion& vp);
-
-    bool FrustumCulling(const WSPointCloudPtr cloud,
-                        const Eigen::Matrix4f& camera,
-                        float hfov, float vfov,
-                        float ndist, float fdist,
-                        WSPointCloudPtr viewPoints);
-
+    Eigen::Affine3f ViewPoint2CameraPose(const Cartesion& vp);
+    Cartesion CameraPose2ViewPoint(const Eigen::Affine3f& camera);
     // convert traditional x right, y down and z forward matrix to xforward,y up, z right.
     Eigen::Matrix4f CameraPoseTransform(const Eigen::Matrix4f& mat);
+    bool FilterViewPoint(const PCLOctree& tree, const Eigen::Affine3f& camera);
+    bool IsVisibleVoxel(const PCLOctree& tree, const Eigen::Vector3f& camera, const Eigen::Vector3f& centroid);
+    Eigen::Affine3f CameraPosition(const Eigen::Vector3f& target, const Eigen::Vector3f& normal, double distance);
+    Eigen::Affine3f CameraMatrix(const Eigen::Vector3f& center, const Eigen::Vector3f& normal);
+    bool FrustumCulling(const WSPointCloudPtr cloud,const Eigen::Matrix4f& camera,float hfov, float vfov,float ndist, float fdist,WSPointCloudPtr viewPoints);
     Eigen::Matrix4f Quadrotor2Camera(double camera_angle);
-
-    // void CameraPositionWithVoxelCube(const PCLOctree& tree,
-    //                                  double distance,
-    //                                  std::vector<Eigen::Affine3f>& cameras);
-    //void Quaternion2EularAngles(const Eigen::Quaternionf& q, double& yaw, double& pitch, double& roll);
   };
 };
 

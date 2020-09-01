@@ -4,17 +4,16 @@ from math import *
 from geometry_msgs.msg import Pose
 
 class ViewPoint(object):
-    def __init__(self,idx,px,py,pz,ox,oy,oz,ow,angle):
+    def __init__(self,idx,px,py,pz,ox,oy,oz,ow):
         self.idx = idx
-        self.quadrotor_pose = Pose();
-        self.quadrotor_pose.position.x = px
-        self.quadrotor_pose.position.y = py
-        self.quadrotor_pose.position.z = pz
-        self.quadrotor_pose.orientation.x = ox
-        self.quadrotor_pose.orientation.y = oy
-        self.quadrotor_pose.orientation.z = oz
-        self.quadrotor_pose.orientation.w = ow
-        self.camera_angle = angle
+        self.cam_pose = Pose();
+        self.cam_pose.position.x = px
+        self.cam_pose.position.y = py
+        self.cam_pose.position.z = pz
+        self.cam_pose.orientation.x = ox
+        self.cam_pose.orientation.y = oy
+        self.cam_pose.orientation.z = oz
+        self.cam_pose.orientation.w = ow
         self.voxels = []
     def add_voxel(self, voxel_idx):
         if voxel_idx not in self.voxels:
@@ -23,11 +22,8 @@ class ViewPoint(object):
     def index(self):
         return self.idx
     # the pose of quadrotor
-    def quadrotor(self):
-        return self.quadrotor_pose
-    # the angle of camera
     def camera(self):
-        return self.camera_angle
+        return self.cam_pose
     # voxels index in the camera view
     def view(self):
         return self.voxels
@@ -68,10 +64,10 @@ class ViewPointMap(object):
 
     # distance of two viewpoints
     def distance(self, vp1, vp2):
-        x1 = vp1.quadrotor().position.x;
-        y1 = vp1.quadrotor().position.y;
-        z1 = vp1.quadrotor().position.z;
-        x2 = vp2.quadrotor().position.x;
-        y2 = vp2.quadrotor().position.y;
-        z2 = vp2.quadrotor().position.z;
+        x1 = vp1.camera().position.x;
+        y1 = vp1.camera().position.y;
+        z1 = vp1.camera().position.z;
+        x2 = vp2.camera().position.x;
+        y2 = vp2.camera().position.y;
+        z2 = vp2.camera().position.z;
         return sqrt((x1-x2)*(x1-x2)+(y1-y2)*(y1-y2)+(z1-z2)*(z1-z2))

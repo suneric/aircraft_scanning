@@ -96,12 +96,12 @@ class ScanningUtil(object):
         return self.distance(vp1,vp2)
 
     def distance(self, vp1, vp2):
-        x1 = vp1.quadrotor().position.x;
-        y1 = vp1.quadrotor().position.y;
-        z1 = vp1.quadrotor().position.z;
-        x2 = vp2.quadrotor().position.x;
-        y2 = vp2.quadrotor().position.y;
-        z2 = vp2.quadrotor().position.z;
+        x1 = vp1.camera().position.x;
+        y1 = vp1.camera().position.y;
+        z1 = vp1.camera().position.z;
+        x2 = vp2.camera().position.x;
+        y2 = vp2.camera().position.y;
+        z2 = vp2.camera().position.z;
         return sqrt((x1-x2)*(x1-x2)+(y1-y2)*(y1-y2)+(z1-z2)*(z1-z2))
 
     def load(self,file):
@@ -116,9 +116,8 @@ class ScanningUtil(object):
                 oy = float(data[5])
                 oz = float(data[6])
                 ow = float(data[7])
-                angle = float(data[8])
-                vp = ViewPoint(idx,px,py,pz,ox,oy,oz,ow,angle)
-                voxels = data[9:len(data)]
+                vp = ViewPoint(idx,px,py,pz,ox,oy,oz,ow)
+                voxels = data[8:len(data)]
                 # build voxels list
                 for v in voxels:
                     vxIdx = int(v)
@@ -137,8 +136,7 @@ class ScanningUtil(object):
             for vpIdx in trajectory:
                 vp = self.viewpoints[vpIdx]
                 idx = vp.index()
-                pos = vp.quadrotor()
-                angle = vp.camera()
+                pos = vp.camera()
                 voxels = vp.view()
 
                 line = str(idx) + " "\
@@ -148,8 +146,7 @@ class ScanningUtil(object):
                      + str(pos.orientation.x) + " "\
                      + str(pos.orientation.y) + " "\
                      + str(pos.orientation.z) + " "\
-                     + str(pos.orientation.w) + " "\
-                     + str(angle) + " "
+                     + str(pos.orientation.w) + " "
                 # voxels index of viewpoint
                 for i in range(len(voxels)):
                     line = line + str(self.voxels[voxels[i]]) + " "

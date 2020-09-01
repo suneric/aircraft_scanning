@@ -226,11 +226,11 @@ void UpdatePointCloud(PCLViewer* viewer, const std::string& dir, bool bFilter,do
 void DisplayTrajectory(PCLViewer* viewer, const std::string& dir, const std::string& file, double resolution, int type)
 {
   PCLViewPoint viewCreator;
-  std::vector<ViewPoint> vps;
+  std::vector<Eigen::Affine3f> cameras;
   if (!file.empty())
   {
-    viewCreator.LoadTrajectory(file,vps);
-    std::cout << vps.size() << " viewpoints found in trajectory." << std::endl;
+    viewCreator.LoadFromFile(file,cameras);
+    std::cout << cameras.size() << " viewpoints found in trajectory." << std::endl;
   }
 
   WSPointCloudPtr cloud = viewer->LoadPointCloud(dir);
@@ -270,9 +270,9 @@ void DisplayTrajectory(PCLViewer* viewer, const std::string& dir, const std::str
 
   WSPoint startPt, endPt;
   std::vector<int> coveredVoxels;
-  for (size_t i = 0; i < vps.size(); ++i)
+  for (size_t i = 0; i < cameras.size(); ++i)
   {
-      Eigen::Affine3f camera = viewCreator.ViewPoint2CameraPose(vps[i]);
+      Eigen::Affine3f camera = cameras[i];
       if (i == 0) {
         endPt.x = camera.matrix()(0,3);
         endPt.y = camera.matrix()(1,3);
@@ -298,11 +298,9 @@ void DisplayTrajectory(PCLViewer* viewer, const std::string& dir, const std::str
           vCenters.push_back(vCenter);
         }
       }
-      // std::cout << vCenters.size() << " voxels are covered." << std::endl;
-
       mtx.lock();
       std::string text("viewpoint: ");
-      text.append(std::to_string(i+1)).append("/").append(std::to_string(vps.size()));
+      text.append(std::to_string(i+1)).append("/").append(std::to_string(cameras.size()));
       //double dCoverage = 100.0*(double(coveredVoxels.size()) / double(totalVoxel));
       //std::string coverage(", total coverage: ");
       //coverage.append(std::to_string(dCoverage)).append(" %");
@@ -328,7 +326,6 @@ void DisplayTrajectory(PCLViewer* viewer, const std::string& dir, const std::str
         AddCubes(viewer, vCenters, std::to_string(i), voxelLen, 0, 1.0,0.0,0.0);
       }
       mtx.unlock();
-
       // Sleep for 2 seconds for the ply file
       std::this_thread::sleep_for(std::chrono::seconds(1));
   }
@@ -375,53 +372,26 @@ void GenerateViewpoints(PCLViewer* viewer,
   PCLViewPoint viewCreator;
 
   // create camera along the voxel normals
-  std::vector<ViewPoint> vps;
   std::vector<Eigen::Affine3f> cameras;
   PCLOctree octree(srcCloud, resolution,3);
   for (int i = 0; i < segments.size(); ++i)
   {
     Eigen::Vector3f refNormal = segments[i].first;
     BBox bbox = segments[i].second;
-    viewCreator.GenerateCameraPositions(octree,distance,refNormal,bbox,cameras,vps);
+    viewCreator.GenerateCameraPositions(octree,distance,refNormal,bbox,cameras);
   }
-
+  std::cout << cameras.size() << " camere positions generated." << std::endl;
 
   ////////////////////////////////////////////////////////////////////////////
   // voxel in view frustum culling
   // use a higher resolution to calculate voxel coverage
   PCLOctree octree2(srcCloud,0.5*resolution,3);
-  // filter viewpoints
-  std::vector<ViewPoint> viewpointVec;
-  std::vector<Eigen::Affine3f> cameraPoseVec;
-  for (size_t i = 0; i < cameras.size(); ++i)
-  {
-    ViewPoint vp = vps[i];
-    double qr_x = vp.quadrotor_pose.pos_x;
-    double qr_y = vp.quadrotor_pose.pos_y;
-    double qr_z = vp.quadrotor_pose.pos_z;
-    // //height limitation
-    if (qr_x < 3.0 && qr_x >-3.0)
-    {
-      if (qr_z > 3 && qr_z < 8)
-      {
-        if (qr_y > -26)
-          continue;
-      }
-    }
-
-    if(viewCreator.FilterViewPoint(octree2,cameras[i],vp))
-      continue;
-
-    viewpointVec.push_back(vps[i]);
-    cameraPoseVec.push_back(cameras[i]);
-  }
-
   std::vector<int> voxelCoveredVec;
   std::map<int, std::vector<int> > viewVoxelMap;
-  for (size_t i = 0; i < cameraPoseVec.size(); ++i)
+  for (size_t i = 0; i < cameras.size(); ++i)
   {
     std::vector<int> visibleVoxels;
-    WSPointCloudPtr viewCloud = viewCreator.CameraViewVoxels(octree2,cameraPoseVec[i],visibleVoxels);
+    WSPointCloudPtr viewCloud = viewCreator.CameraViewVoxels(octree2,cameras[i],visibleVoxels);
     viewVoxelMap.insert(std::make_pair(static_cast<int>(i), visibleVoxels));
     for (size_t j = 0; j < visibleVoxels.size(); ++j)
     { // calculate covered voxels
@@ -430,8 +400,6 @@ void GenerateViewpoints(PCLViewer* viewer,
         voxelCoveredVec.push_back(vIndex);
     }
   }
-  std::cout << cameraPoseVec.size() << " filtered camere positions / " << vps.size() << " generated." << std::endl;
-
 
   ////////////////////////////////////////////////////////////////////////////
   // voxel coverage
@@ -451,7 +419,7 @@ void GenerateViewpoints(PCLViewer* viewer,
   // save viewpoints
   std::string fileName("/home/yufeng/Temp/viewpoint");
   fileName.append(std::to_string(distance)).append("_").append(std::to_string(resolution)).append(".txt");
-  viewCreator.Save2File(fileName, viewpointVec, viewVoxelMap);
+  viewCreator.SaveToFile(fileName, cameras, viewVoxelMap);
   std::cout << "save to " << fileName << std::endl;
 
   ////////////////////////////////////////////////////////////////////////////
@@ -470,8 +438,8 @@ void GenerateViewpoints(PCLViewer* viewer,
   }
   else if (display == -1)
   {
-    for (size_t i = 0; i < cameraPoseVec.size(); ++i)
-      viewer->AddCoordinateSystem(cameraPoseVec[i],i);
+    for (size_t i = 0; i < cameras.size(); ++i)
+      viewer->AddCoordinateSystem(cameras[i],i);
   }
   else if (display == -3)
   {
@@ -492,12 +460,12 @@ void GenerateViewpoints(PCLViewer* viewer,
     std::string name("view_frustum");
     name.append("_").append(std::to_string(0));
     std::vector<int> visibleVoxelIndices;
-    WSPointCloudPtr viewCloud = viewCreator.CameraViewVoxels(octree2,cameraPoseVec[0],visibleVoxelIndices);
+    WSPointCloudPtr viewCloud = viewCreator.CameraViewVoxels(octree2,cameras[0],visibleVoxelIndices);
     std::vector<WSPoint> centroids;
     for (size_t i = 0; i < viewCloud->points.size(); ++i)
       centroids.push_back(viewCloud->points[i]);
     AddCubes(viewer, centroids, name, voxelLen, vp, 0.0,0.0,1.0);
-    viewer->AddCoordinateSystem(cameraPoseVec[0],display);
+    viewer->AddCoordinateSystem(cameras[0],display);
   }
 }
 

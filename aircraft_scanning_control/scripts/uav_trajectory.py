@@ -11,10 +11,10 @@ class trajectory_defined:
     def __init__(self):
         self.trajectory = []
         self.index = 0
+        file = os.path.join(sys.path[0],'../../aircraft_scanning_plan/trajectory/uav/viewpoints.txt');
+        self._load_trajectory(file)
+        #self._create_trajectory()
         #self._create_wing_trajectory()
-        # file = os.path.join(sys.path[0],'../../aircraft_scanning_plan/trajectory/viewpoints.txt');
-        # self._load_trajectory(file)
-        self._create_trajectory()
 
     def completed(self):
         return self.index >= len(self.trajectory)
@@ -40,7 +40,6 @@ class trajectory_defined:
                 oy = float(data[5])
                 oz = float(data[6])
                 ow = float(data[7])
-                angle = float(data[8])
                 pose = Pose();
                 pose.position.x = px
                 pose.position.y = py
@@ -49,7 +48,8 @@ class trajectory_defined:
                 pose.orientation.y = oy
                 pose.orientation.z = oz
                 pose.orientation.w = ow
-                self.trajectory.append([pose,angle])
+                quadrotor, camera = transform.quadrotor_camera_pose(pose)
+                self.trajectory.append([quadrotor,camera])
         reader.close()
 
 

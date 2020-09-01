@@ -3,7 +3,7 @@ import numpy as np
 from numpy import pi, sqrt, cos, sin, arctan2, array, matrix
 from numpy.linalg import norm
 from geometry_msgs.msg import Pose
-from tf.transformations import quaternion_from_matrix, quaternion_matrix
+from tf.transformations import quaternion_from_matrix, quaternion_matrix, euler_from_quaternion
 from math import *
 
 # transform for mobile manipulator scanning
@@ -169,26 +169,27 @@ def quadrotor2camera(pose, angle):
 
 # decompose the viewpoint to quadrotor position and angle of camera joint
 def quadrotor_camera_pose(viewpoint):
-    # pose*T_base*T_camjoint = vp
-    matvp = cartesian_to_matrix(viewpoint)
     # find position of quadrotor and angle of camera joint
     qw = viewpoint.orientation.w
     qx = viewpoint.orientation.x
     qy = viewpoint.orientation.y
     qz = viewpoint.orientation.z
-    yaw,pitch,roll = quaternion_to_eularangle(qw,qx,qy,qz)
+    eular_angle = euler_from_quaternion([qx,qy,qz,qw])
+    # as the camera rs_d435 rotates about z axis -pi/2
+    angle = eular_angle[0]
+    # pitch = eular_angle[1]
+    # yaw = eular_angle[2]
     #print("yaw,pitch,roll",yaw,pitch,roll)
-
-    angle = pitch # pitch turns to angle of camera joint
-
+    
+    # pose*T_base*T_camjoint = vp
+    matvp = cartesian_to_matrix(viewpoint)
     mat0 = quadrotorbase()
     mat1 = camerajoint(angle)
     mat2 = camera2pointcloud()
     rs_mat = mat0*mat1*mat2
-
     quadrotor_mat = matvp*np.linalg.inv(rs_mat)
-    quadpose = matrix_to_cartesian(quadrotor_mat)
 
+    quadpose = matrix_to_cartesian(quadrotor_mat)
     return quadpose,angle
 
 
@@ -306,24 +307,15 @@ def cartesian_to_matrix(cp):
 # homougenous matrix to quaternion
 # return Pose()
 def matrix_to_cartesian(mat):
-    rot = np.array([mat[0,0:3],mat[1,0:3],mat[2,0:3]])
-    trans = np.array([mat[0,3],mat[1,3],mat[2,3]])
-    x = trans[0]
-    y = trans[1]
-    z = trans[2]
-    qw = 0.5*sqrt(1+rot[0,0]+rot[1,1]+rot[2,2])
-    qx = (rot[2,1]-rot[1,2])/(4*qw)
-    qy = (rot[0,2]-rot[2,0])/(4*qw)
-    qz = (rot[1,0]-rot[0,1])/(4*qw)
-
     cp = Pose()
-    cp.position.x = x
-    cp.position.y = y
-    cp.position.z = z
-    cp.orientation.w = qw
-    cp.orientation.x = qx
-    cp.orientation.y = qy
-    cp.orientation.z = qz
+    cp.position.x = mat[0,3]
+    cp.position.y = mat[1,3]
+    cp.position.z = mat[2,3]
+    q = quaternion_from_matrix(mat)
+    cp.orientation.x = q[0]
+    cp.orientation.y = q[1]
+    cp.orientation.z = q[2]
+    cp.orientation.w = q[3]
     return cp
 
 # return Pose()
