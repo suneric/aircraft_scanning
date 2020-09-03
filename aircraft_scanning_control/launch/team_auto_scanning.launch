@@ -1,0 +1,4 @@
+<launch>
+	<node name="team_auto_scanning" pkg="aircraft_scanning_control" type="team_auto_scanning.py"  output="screen">
+  </node>
+</launch>
