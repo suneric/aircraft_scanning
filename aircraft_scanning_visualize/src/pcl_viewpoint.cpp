@@ -14,7 +14,9 @@ void PCLViewPoint::GenerateCameraPositions(
   double distance,
   const Eigen::Vector3f& refNormal,
   const std::vector<double>& bbox,
-  std::vector<Eigen::Affine3f>& cameras)
+  std::vector<Eigen::Affine3f>& cameras,
+  double height_min,
+  double height_max)
 {
   WSPointCloudPtr vCloud;
   WSPointCloudNormalPtr vNormal = tree.VoxelAverageNormals(refNormal,bbox,vCloud);
@@ -22,22 +24,31 @@ void PCLViewPoint::GenerateCameraPositions(
   {
     Eigen::Vector3f point(vCloud->points[i].x, vCloud->points[i].y, vCloud->points[i].z);
     Eigen::Vector3f nm(vNormal->points[i].normal_x, vNormal->points[i].normal_y, vNormal->points[i].normal_z);
-    Eigen::Affine3f camera = CameraPosition(point,nm,distance);
+    Eigen::Affine3f camera = CameraPosition(point,nm,distance,height_min,height_max);
     if (!FilterViewPoint(tree,camera))
       cameras.push_back(camera);
   }
 }
 
-Eigen::Affine3f PCLViewPoint::CameraPosition(const Eigen::Vector3f& target,const Eigen::Vector3f& normal,double distance)
+// the camere position should be placed at safe distance to the aircraft which is longer than the defined distance
+// consider the robot workspace is limited, also need to consider the height (z) of the robot can reach
+Eigen::Affine3f PCLViewPoint::CameraPosition(const Eigen::Vector3f& target,const Eigen::Vector3f& normal,double distance, double height_min, double height_max)
 {
   Eigen::Vector3f nm = normal.normalized();
   Eigen::Vector3f pt = target + distance*nm;
-  // given a limited minimum z
-  while (pt.z() < 0.5)
+  // if the height is too low
+  while (pt.z() < height_min)
   {
     distance = 0.9*distance;
     pt = target + distance*nm;
   }
+  // if the height is too high
+  while (pt.z() > height_max)
+  {
+    distance = 1.1*distance;
+    pt = target + distance*nm;
+  }
+
   return CameraMatrix(pt,-nm);
 }
 
@@ -47,23 +58,23 @@ Eigen::Affine3f PCLViewPoint::CameraPosition(const Eigen::Vector3f& target,const
 Eigen::Affine3f PCLViewPoint::CameraMatrix(const Eigen::Vector3f& center, const Eigen::Vector3f& normal)
 {
   Eigen::Vector3f nm = normal.normalized();
-  double beta = acos(nm.z())-M_PI/2;
+  double beta = acos(nm.z()); // pitch angle
   double alpha = 0.0;
   if (nm.x() != 0)
-    alpha = atan2(nm.y(),nm.x());
+    alpha = atan2(nm.y(),nm.x()); // yaw angle
 
   Eigen::Matrix4f mat;
   mat(0,0) = sin(alpha);
-  mat(0,1) = cos(alpha)*cos(beta+M_PI/2);
-  mat(0,2) = cos(alpha)*sin(beta+M_PI/2);
+  mat(0,1) = cos(alpha)*cos(beta);
+  mat(0,2) = cos(alpha)*sin(beta);
   mat(0,3) = center.x();
   mat(1,0) = -cos(alpha);
-  mat(1,1) = sin(alpha)*cos(beta+M_PI/2);
-  mat(1,2) = sin(alpha)*sin(beta+M_PI/2);
+  mat(1,1) = sin(alpha)*cos(beta);
+  mat(1,2) = sin(alpha)*sin(beta);
   mat(1,3) = center.y();
   mat(2,0) = 0;
-  mat(2,1) = -sin(beta+M_PI/2);
-  mat(2,2) = cos(beta+M_PI/2);
+  mat(2,1) = -sin(beta);
+  mat(2,2) = cos(beta);
   mat(2,3) = center.z();
   mat(3,0) = 0;
   mat(3,1) = 0;

@@ -220,4 +220,4 @@ if __name__ == "__main__":
     end_time = time.time()
     train_duration = end_time-start_time
     print("monte carlo tree search:", simulation_count, "iteration", train_duration/3600, "hours")
-    mcts.test(cparam,env,os.path.join(output_dir,"trajectory.txt"))
+    mcts.test(cparam,env,os.path.join(output_dir,"viewpoints.txt"))

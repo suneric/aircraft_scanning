@@ -4,6 +4,7 @@ import numpy as np
 import time
 
 import transform
+from transform import QuadrotorTransform
 from geometry_msgs.msg import PoseStamped
 from gazebo_msgs.msg import ModelStates
 from control_msgs.msg import JointControllerState
@@ -18,6 +19,7 @@ from hector_uav_msgs.srv import EnableMotors
 class uav_cam_controller:
     def __init__(self):
         self.camerapose = None
+        self.transform_util = QuadrotorTransform()
         self.camerapose_sub = rospy.Subscriber('uav_scanning/camera_pose_controller/state', JointControllerState, self._camerapose_callback)
         self.camerapose_pub = rospy.Publisher('uav_scanning/camera_pose_controller/command', Float64, queue_size=1)
 
@@ -30,7 +32,7 @@ class uav_cam_controller:
         self.goal_pose = None
 
     def transform_q2c(self):
-        mat = transform.quadrotor2camera(self.quadrotor_pose,self.camerapose)
+        mat = self.transform_util.quadrotor2camera(self.quadrotor_pose,self.camerapose)
         return mat
 
     def camera_pose(self):

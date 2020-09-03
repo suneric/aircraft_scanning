@@ -6,15 +6,18 @@ import sys
 from math import *#sin, cos, acos, asin, radians
 from geometry_msgs.msg import Pose
 import transform
+from transform import QuadrotorTransform
 
 class trajectory_defined:
     def __init__(self):
         self.trajectory = []
         self.index = 0
+        self.transform_util = QuadrotorTransform()
         file = os.path.join(sys.path[0],'../../aircraft_scanning_plan/trajectory/uav/viewpoints.txt');
         self._load_trajectory(file)
         #self._create_trajectory()
         #self._create_wing_trajectory()
+
 
     def completed(self):
         return self.index >= len(self.trajectory)
@@ -48,7 +51,7 @@ class trajectory_defined:
                 pose.orientation.y = oy
                 pose.orientation.z = oz
                 pose.orientation.w = ow
-                quadrotor, camera = transform.quadrotor_camera_pose(pose)
+                quadrotor, camera = self.transform_util.camera2quadrotor(pose)
                 self.trajectory.append([quadrotor,camera])
         reader.close()
 

@@ -98,7 +98,7 @@ void PCLViewer::AddCoordinateSystem(const Eigen::Affine3f& camPose, int idIndex,
   std::string name("ccs");
   name.append(std::to_string(vp));
   name.append(std::to_string(idIndex));
-  m_viewer->addCoordinateSystem(1.0,camPose,name,vp);
+  m_viewer->addCoordinateSystem(0.5,camPose,name,vp);
 }
 
 void PCLViewer::SpinOnce(double duration)

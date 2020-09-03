@@ -45,7 +45,9 @@ namespace asv3d
       double distance,
       const Eigen::Vector3f& refNormal,
       const std::vector<double>& bbox,
-      std::vector<Eigen::Affine3f>& cameras
+      std::vector<Eigen::Affine3f>& cameras,
+      double height_min,
+      double height_max
     );
     WSPointCloudPtr CameraViewVoxels(
       const PCLOctree& tree,
@@ -69,7 +71,7 @@ namespace asv3d
     Eigen::Matrix4f CameraPoseTransform(const Eigen::Matrix4f& mat);
     bool FilterViewPoint(const PCLOctree& tree, const Eigen::Affine3f& camera);
     bool IsVisibleVoxel(const PCLOctree& tree, const Eigen::Vector3f& camera, const Eigen::Vector3f& centroid);
-    Eigen::Affine3f CameraPosition(const Eigen::Vector3f& target, const Eigen::Vector3f& normal, double distance);
+    Eigen::Affine3f CameraPosition(const Eigen::Vector3f& target, const Eigen::Vector3f& normal, double distance, double height_min, double height_max);
     Eigen::Affine3f CameraMatrix(const Eigen::Vector3f& center, const Eigen::Vector3f& normal);
     bool FrustumCulling(const WSPointCloudPtr cloud,const Eigen::Matrix4f& camera,float hfov, float vfov,float ndist, float fdist,WSPointCloudPtr viewPoints);
     Eigen::Matrix4f Quadrotor2Camera(double camera_angle);

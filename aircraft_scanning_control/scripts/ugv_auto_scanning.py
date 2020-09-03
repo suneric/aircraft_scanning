@@ -36,7 +36,7 @@ if __name__ == '__main__':
             if (key_input == ''):
                 goal = trajectory.next_pose()
                 while goal != None:
-                    controller.drive_ugv(goal)
+                    controller.drive(goal)
                     mat = controller.transform_m2c()
                     pc_capture.scan_and_save(mat)
                     goal = trajectory.next_pose()

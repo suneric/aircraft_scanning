@@ -10,6 +10,7 @@ from gazebo_msgs.msg import ModelStates
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64
 import transform
+from transform import MMRobotTransform
 
 class arm_controller:
     def __init__(self):
@@ -36,12 +37,7 @@ class arm_controller:
 
     # set a goal with catersian pose [position, quanternion]
     def set_goal(self, goal):
-        if transform.valid_catersian_pose(goal):
-            self.goal = goal
-            return True
-        else:
-            print("invalid goal")
-            return False
+        self.goal = goal
 
     def drive(self):
         if self.goal != None and self.status == 'stop':
@@ -53,12 +49,9 @@ class arm_controller:
     def _move_to_goal(self):
         if self.goal == None:
             return
-
-        joints = transform.catersian_to_joint(self.goal)
-        self._move(joints)
-
         # check if joint reach target positions
-        while not self._goal_reached(joints):
+        while not self._goal_reached(self.goal):
+            self._move(self.goal)
             rospy.sleep(1)
 
     def _goal_reached(self,goal,tolerance=0.01):
@@ -101,13 +94,14 @@ class ugv_controller:
     def _ugv_callback(self, data):
         index = data.name.index('iiwa')
         self.ugv_pose = data.pose[index]
+        # print(self.ugv_pose)
 
     # catesian pose with position and orientation in quaternion
     def pose(self):
         return self.ugv_pose
 
     # eular angle representation of pose, x, y, yaw in global coordinate system
-    def eular_pose(self):
+    def euler_pose(self):
         current = self.ugv_pose
         px = current.position.x
         py = current.position.y
@@ -123,7 +117,6 @@ class ugv_controller:
     # set goal position, x, y, yaw (startin from x axis)
     def set_goal(self,goal):
         self.goal = goal #(x,y,yaw)
-        return True
 
     def drive(self):
         if self.goal != None and self.status == 'stop':
@@ -132,36 +125,51 @@ class ugv_controller:
             self.status = 'stop'
             self.goal = None
 
+    def _goal_reached(self,goal,tolerance=0.01):
+        (gx,gy,gyaw) = self.goal
+        (px,py,yaw) = self.euler_pose()
+        print("goal reach check", self.goal, self.euler_pose())
+        if abs(gx-px) > tolerance:
+            return False
+        if abs(gy-py) > tolerance:
+            return False
+        if abs(gyaw-yaw) > tolerance or abs(gyaw-yaw)-2*pi > tolerance:
+            return False
+        return True
+
     def _move_to_goal(self,tolerance=0.001):
         # as the skid_steer, velocity control only in x and z, not y
         # so the drive control
         (gx,gy,gyaw) = self.goal
         # step 1: pre rotate
-        (px,py,yaw) = self.eular_pose()
+        (px,py,yaw) = self.euler_pose()
+        if self._goal_reached(self.goal):
+            return
+
         angle = self._direction2goal(px,py,gx,gy)
         yaw_err = self._yaw2goal(yaw,angle)
         while not abs(yaw_err) < tolerance:
             self._rotate_controller(yaw_err)
-            (px,py,yaw) = self.eular_pose()
+            (px,py,yaw) = self.euler_pose()
             yaw_err = self._yaw2goal(yaw,angle)
             #print("pre rotate yaw_err: ", yaw_err)
         self.stop()
 
         # step 2: move to goal position
-        dist_err, yaw_err = self._distance2goal(self.eular_pose(),self.goal)
+        dist_err, yaw_err = self._distance2goal(self.euler_pose(),self.goal)
         v,vz,dist_i,yaw_i = 1.0,pi,0.0,0.0
         while not abs(dist_err) < 10.0*tolerance:
             v,vz,dist_i,yaw_i = self._pid_controller(dist_err,yaw_err,v,vz,dist_i,yaw_i)
             # print("errors:", dist_err,yaw_err,v,vz)
-            dist_err, yaw_err = self._distance2goal(self.eular_pose(),self.goal)
+            dist_err, yaw_err = self._distance2goal(self.euler_pose(),self.goal)
         self.stop()
 
         # step 3: post rotate
-        (px,py,yaw) = self.eular_pose()
+        (px,py,yaw) = self.euler_pose()
         yaw_err = self._yaw2goal(yaw,gyaw)
         while not abs(yaw_err) < tolerance:
             self._rotate_controller(yaw_err)
-            (px,py,yaw) = self.eular_pose()
+            (px,py,yaw) = self.euler_pose()
             yaw_err = self._yaw2goal(yaw,gyaw)
             #print("post rotate yaw_err: ", yaw_err)
         self.stop()
@@ -250,6 +258,7 @@ class ugv_controller:
 # controller
 class ugv_arm_controller:
     def __init__(self):
+        self.transform_util = MMRobotTransform()
         self.ugv = ugv_controller()
         self.arm = arm_controller()
         self.initialized = False
@@ -271,6 +280,10 @@ class ugv_arm_controller:
         self.arm.set_goal(goal)
         self.arm.drive()
 
+    def drive(self,goal):
+        self.drive_ugv(goal[0])
+        self.drive_arm(goal[1])
+
     def transform_m2c(self):
-        mat = transform.mobilebase2camera(self.ugv.pose(), self.arm.pose())
+        mat = self.transform_util.mobilebase2camera(self.ugv.pose(), self.arm.pose())
         return mat

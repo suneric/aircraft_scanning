@@ -349,12 +349,16 @@ void GenerateViewpoints(PCLViewer* viewer,
   std::ifstream config(configFile);
   std::string line;
   std::cout << "read config " << segments.size() << std::endl;
+
+  // the viewpoint z limited in range of [height_min, height_max]
+  double height_max = 0.0;
+  double height_min = 0.0;
   while (std::getline(config, line))
   {
     std::cout << line << std::endl;
     std::stringstream linestream(line);
     std::string nx,ny,nz,xmin,xmax,ymin,ymax,zmin,zmax;
-    linestream >> nx >> ny >> nz >> xmin >> xmax >> ymin >> ymax >> zmin >> zmax;
+    linestream >> nx >> ny >> nz >> xmin >> xmax >> ymin >> ymax >> zmin >> zmax >> height_min >> height_max;
     BBox box;
     box.push_back(std::stod(xmin));
     box.push_back(std::stod(xmax));
@@ -378,7 +382,7 @@ void GenerateViewpoints(PCLViewer* viewer,
   {
     Eigen::Vector3f refNormal = segments[i].first;
     BBox bbox = segments[i].second;
-    viewCreator.GenerateCameraPositions(octree,distance,refNormal,bbox,cameras);
+    viewCreator.GenerateCameraPositions(octree,distance,refNormal,bbox,cameras, height_min, height_max);
   }
   std::cout << cameras.size() << " camere positions generated." << std::endl;
 
