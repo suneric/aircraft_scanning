@@ -7,30 +7,43 @@ The project uses
 The system is developed in python and C++ on Ubuntu 16.04 with [ROS Kinetic](http://wiki.ros.org/kinetic).
 
 ## Dependencies
-1. install [Gazebo9](http://gazebosim.org/tutorials?tut=install_ubuntu) with ROS Kinetic
-(by default, install ROS kinetic will install Gazebo7, so install ros-kinetic-desktop instead of ros-kinetic-desktop-full)
+1. install point cloud library (pcl 1.7.2 on ubuntu 16.04, pcl 1.8.1 on ubuntu 18.04) and [python-pcl](https://python-pcl-fork.readthedocs.io/en/rc_patches4/install.html)(use prebuild 0.3 for pcl1.8)
+```
+sudo apt-get install libpcl-dev -y
+```
+2. install [opencv](https://docs.opencv.org/master/d7/d9f/tutorial_linux_install.html) and opencv-python (4.2.0.32)
+```
+sudo apt-get install libopencv-dev
+pip install opencv-python==4.2.0.32
+```
+3. install [Gazebo9](http://gazebosim.org/tutorials?tut=install_ubuntu) with ROS Kinetic or Melodic
 ```
 sudo sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable `lsb_release -cs` main" > /etc/apt/sources.list.d/gazebo-stable.list'
 wget https://packages.osrfoundation.org/gazebo.key -O - | sudo apt-key add -
 sudo apt-get install gazebo9
 ```
+4. install [realsense sdk](https://github.com/IntelRealSense/librealsense/blob/master/doc/distribution_linux.md) and [realsense-ros](https://github.com/IntelRealSense/realsense-ros)(compile from source) 
+```
+sudo apt-get install librealsense2-dkms
+sudo apt-get install librealsense2-utils
+sudo apt-get install librealsense2-dev (for compile realsense-ros)
+
+```
 some dependencies for gazebo-ros-pkgs are required.
   - ros-kinetic-gazebo-ros-pkgs
   - ros-kinetic-gazebo-ros-control
-  - ros-kineric-gazebo-ros-controllers
   - ros-kinetic-effort-controllers
   - ros-kinetic-joint-state-controller
   - ros-kinetic-controller-manager
   - ros-kinetic-geographic-msgs   
   - ros-kinetic-sensor-msgs
-2. install point cloud library (by default pcl 1.7.2 on ubuntu 16.04) and python-pcl
-3. install [opencv](https://docs.opencv.org/master/d7/d9f/tutorial_linux_install.html) and opencv-python
-4. install hector_quadrotor and related packages
+
+5. install hector_quadrotor and related packages
   - [hector_quadrotor](http://wiki.ros.org/hector_quadrotor)
   - [hector_gazebo](http://wiki.ros.org/hector_gazebo)
   - [hector_localization](http://wiki.ros.org/hector_localization)
   - [hector_sensor_description](http://wiki.ros.org/hector_sensors_description)
-5. install [iiwa_stack](https://github.com/IFL-CAMP/iiwa_stack)
+6. install [iiwa_stack](https://github.com/IFL-CAMP/iiwa_stack)
 
 ## packages
 - aircraft_scanning_description. the package of modeling the quadrotor and the realsense camera.

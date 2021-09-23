@@ -2,7 +2,7 @@
 #include <math.h>
 #include <vector>
 #include "pcl_viewer.h"
-#include <pcl/io/ply_io.h>
+#include <pcl/io/pcd_io.h>
 #include <pcl/common/centroid.h>
 #include <pcl/common/common.h>
 #include <pcl/visualization/common/common.h>
@@ -17,7 +17,8 @@ PCLViewer::PCLViewer(const std::string& title)
   m_viewer->initCameraParameters();
   m_viewer->setSize(1024,748);
   m_ptCloud = nullptr;
-  m_viewer->setBackgroundColor(0.618,0.618,0.618);
+  // m_viewer->setBackgroundColor(0.618,0.618,0.618);
+  m_viewer->setBackgroundColor(1,1,1);
 }
 
 PCLViewer::~PCLViewer()
@@ -35,7 +36,8 @@ int PCLViewer::CreateViewPort(double xmin,double ymin,double xmax,double ymax)
 {
   int vp(0);
   m_viewer->createViewPort(xmin,ymin,xmax,ymax,vp);
-  m_viewer->setBackgroundColor(0.618,0.618,0.618,vp);
+  //m_viewer->setBackgroundColor(0.618,0.618,0.618,vp);
+  m_viewer->setBackgroundColor(1,1,1,vp);
   m_viewer->addCoordinateSystem(3,"global",vp);
   return vp;
 }
@@ -130,7 +132,7 @@ WSPointCloudPtr PCLViewer::LoadPointCloud(const std::string& dir)
 
   int all = allfiles.size();
   if (all == 0)
-    return false;
+    return nullptr;
 
   int i = 0;
 
@@ -139,7 +141,7 @@ WSPointCloudPtr PCLViewer::LoadPointCloud(const std::string& dir)
     i++;
     std::cout << "pcl == load " << i << "/" << all << " point cloud from " << file << std::endl;
     WSPointCloudPtr temp(new WSPointCloud());
-    int res = pcl::io::loadPLYFile(file, *temp);
+    int res = pcl::io::loadPCDFile(file, *temp);
     if(res < 0)
         std::cout << "pcl == failed to load point cloud." << std::endl;
     *cloud += *temp;
@@ -154,7 +156,7 @@ bool PCLViewer::SavePointCloud(const WSPointCloudPtr cloud, const std::string& d
     return false;
 
   std::string filePath = dir+"point_cloud.ply";
-  int res = pcl::io::savePLYFileASCII(filePath, *cloud);
+  int res = pcl::io::savePCDFileASCII(filePath, *cloud);
   if (res >= 0)
     std::cout << "save as " << filePath << std::endl;
   return res >= 0;

@@ -6,7 +6,7 @@
 #include <vector>
 #include <functional>
 #include <boost/filesystem.hpp>
-#include <pcl/io/ply_io.h>
+#include <pcl/io/pcd_io.h>
 
 #include "pcl_viewer.h"
 #include "pcl_segment.h"
@@ -196,7 +196,7 @@ void UpdatePointCloud(PCLViewer* viewer, const std::string& dir, bool bFilter,do
         {
             std::cout << "pcl == load " << all << " point cloud from " << file << std::endl;
             WSPointCloudPtr temp(new WSPointCloud());
-            int res = pcl::io::loadPLYFile(file, *temp);
+            int res = pcl::io::loadPCDFile(file, *temp);
             if(res < 0)
               std::cout << "pcl == failed to load point cloud." << std::endl;
             if (bFilter)
@@ -491,8 +491,8 @@ void SegmentPointCloud(PCLViewer* viewer, const std::string& dir, const std::vec
     for (int i = 0; i < segClouds.size(); ++i)
     {
       WSPointCloudPtr segCloud = segClouds[i];
-      std::string file = dir+"segment_"+std::to_string(i)+".ply";
-      int res = pcl::io::savePLYFileASCII(file, *segCloud);
+      std::string file = dir+"segment_"+std::to_string(i)+".pcd";
+      int res = pcl::io::savePCDFileASCII(file, *segCloud);
       if (res >= 0)
         std::cout << "save point cloud" << i << "as" << file << std::endl;
     }

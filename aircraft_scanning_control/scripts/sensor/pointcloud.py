@@ -48,8 +48,8 @@ class data_capture:
             return None
 
     def _save_cloud(self,cloud):
-        file = self.filepath+"point_"+str(self.index)+".ply"
-        pcl.save(cloud,file,"ply")
+        file = self.filepath+"point_"+str(self.index)+".pcd"
+        pcl.save(cloud,file,"pcd")
         self.index = self.index + 1
 
     def _in_box(self,x,y,z, bbox):

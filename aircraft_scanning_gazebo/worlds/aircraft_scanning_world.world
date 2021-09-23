@@ -21,7 +21,7 @@
             <lighting>1</lighting>
             <script>
               <uri>file://media/materials/scripts/gazebo.material</uri>
-              <name>Gazebo/White</name>
+              <name>Gazebo/Yellow</name>
             </script>
             <shader type='pixel'/>
           </material>
