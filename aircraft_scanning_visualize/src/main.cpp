@@ -103,13 +103,14 @@ int main(int argc, char** argv) try
   PCLViewer viewer("3D Point Cloud Viewer");
   if(task == 1)
   {
-    std::thread t(DisplayTrajectory, &viewer, dir, trajectory, resolution, sampleType);
+    //std::thread t(DisplayTrajectory, &viewer, dir, trajectory, resolution, sampleType);
+    DisplayTrajectory(&viewer, dir, trajectory, resolution, sampleType);
     while (!viewer.IsStop()) {
       mtx.lock();
       viewer.SpinOnce();
       mtx.unlock();
     }
-    t.join();
+    //t.join();
   }
   else if (task == 2)
   {
@@ -327,7 +328,7 @@ void DisplayTrajectory(PCLViewer* viewer, const std::string& dir, const std::str
       }
       mtx.unlock();
       // Sleep for 2 seconds for the ply file
-      std::this_thread::sleep_for(std::chrono::seconds(1));
+    //  std::this_thread::sleep_for(std::chrono::seconds(1));
   }
 }
 
@@ -377,7 +378,7 @@ void GenerateViewpoints(PCLViewer* viewer,
 
   // create camera along the voxel normals
   std::vector<Eigen::Affine3f> cameras;
-  PCLOctree octree(srcCloud, resolution,3);
+  PCLOctree octree(srcCloud,resolution);
   for (int i = 0; i < segments.size(); ++i)
   {
     Eigen::Vector3f refNormal = segments[i].first;

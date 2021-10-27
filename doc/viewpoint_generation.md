@@ -1,7 +1,12 @@
 # Viewpoint Generation
 
-## camere position generated based on point cloud data
-A octree representation of the rough point cloud will be used for generating viewpoints (a list of camera pose), with specified resolution and safe distance. The safe distance is the minimum distance from camera to the aircraft surface, while a specified height will be considered for generating the viewpoints in the height range because of the limited workspace of robot.
+## camera position generated based on point cloud
+An octree representation of the coarse point cloud is used for generating viewpoints (a list of camera pose), with specified resolution and safe distance.
+The safe distance is the minimum distance from camera to the aircraft surface, while a specified height will be considered for generating the viewpoints in the height range because of the limited workspace of robot.
+1. [Normal Estimation](https://pcl.readthedocs.io/projects/tutorials/en/latest/normal_estimation.html?highlight=normal%20estimation)
+2. Viewpoint Generation
+
+
 
 ## command - generate viewpoints
 ```

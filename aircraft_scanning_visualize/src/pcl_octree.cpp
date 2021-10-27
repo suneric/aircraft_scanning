@@ -160,7 +160,8 @@ bool PCLOctree::EvaluateVoxelNormal(const WSPointCloudPtr cloud, const WSPoint& 
     pcl::search::KdTree<WSPoint>::Ptr tree(new pcl::search::KdTree<WSPoint>());
     ne.setSearchMethod(tree);
     ne.setInputCloud(groupPt);
-    ne.setKSearch(10);
+    //ne.setKSearch(10);
+    ne.setRadiusSearch(0.1); // use all neighbors in 10 cm
     ne.compute(*normals);
 
     // find average normal for the voxel

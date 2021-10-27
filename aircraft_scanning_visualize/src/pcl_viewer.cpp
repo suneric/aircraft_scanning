@@ -155,7 +155,7 @@ bool PCLViewer::SavePointCloud(const WSPointCloudPtr cloud, const std::string& d
   if (cloud == nullptr)
     return false;
 
-  std::string filePath = dir+"point_cloud.ply";
+  std::string filePath = dir+"point_cloud.pcd";
   int res = pcl::io::savePCDFileASCII(filePath, *cloud);
   if (res >= 0)
     std::cout << "save as " << filePath << std::endl;

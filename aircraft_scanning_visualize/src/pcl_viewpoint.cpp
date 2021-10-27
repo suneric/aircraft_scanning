@@ -36,19 +36,6 @@ Eigen::Affine3f PCLViewPoint::CameraPosition(const Eigen::Vector3f& target,const
 {
   Eigen::Vector3f nm = normal.normalized();
   Eigen::Vector3f pt = target + distance*nm;
-  // if the height is too low
-  while (pt.z() < height_min)
-  {
-    distance = 0.9*distance;
-    pt = target + distance*nm;
-  }
-  // if the height is too high
-  while (pt.z() > height_max)
-  {
-    distance = 1.1*distance;
-    pt = target + distance*nm;
-  }
-
   return CameraMatrix(pt,-nm);
 }
 
@@ -217,6 +204,10 @@ void PCLViewPoint::SaveToFile(const std::string& output,
   std::ofstream tFile(output);
   for (size_t i = 0; i < cameras.size(); ++i)
   {
+    if (voxelMap[i].size() == 0){
+      continue;
+    }
+    
     Cartesion vp = CameraPose2ViewPoint(cameras[i]);
     // each line: viewpoint_idx px py pz ox oy oz ow voxel_indices ... \n
     tFile << i << " " << vp.pos_x << " "
