@@ -7,9 +7,10 @@
   - fov: 70 degrees x 70 degrees
   - resolution: 1 meters
   - total count: 900
-|map|candidate viewpoints|
-|:---:|:---:|
-|<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/map331.jpeg" width=50% height=50%>|<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/vpcandidate-u-m1.jpeg" width=50% height=50%>|
+
+map|candidate viewpoints
+:----:|:----:
+<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/map331.jpeg" width=50% height=50%>|<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/vpcandidate-u-m1.jpeg" width=50% height=50%>
 
 ### Minimum Set Covering Problem (try 1000 times and select the solution with the least number of viewpoints)
 - 100% coverage: 49 viewpoints, 62% duplication (overlap grids), 26.67 unique duplication
