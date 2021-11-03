@@ -13,6 +13,8 @@ import time
 import math
 import copy
 import argparse
+import csv
+import pandas as pd
 
 
 """
@@ -197,19 +199,21 @@ class MonteCarloTreeSearch(object):
 
     def search(self,iteration,fe):
         t0 = time.clock()
+        progress = []
         for i in range(iteration):
             self.decayEpsilon(finalEpsilon=fe)
             v = self.treePolicy()
             r = v.rollout()
             v.backpropagate(r)
             vps, coverage = self.test()
+            progress.append(coverage)
             print("iteration {}, epsilon {:.4f}, viewpoints explore {}, coverage {:.2f}%".format(i,self.epsilon,len(vps),coverage*100))
             if coverage >= self.targetCoverage:
                 print("desired coverage achieved {:.2f}%".format(self.targetCoverage*100))
                 break
         t1 = time.clock()
         print("Monte Carlo Tree Search is done in {:.3f} secs".format(t1-t0))
-        return self.root.best_child(self.cparam, 0.0)
+        return self.root.best_child(self.cparam, 0.0), progress
 
     def test(self):
         """
@@ -278,9 +282,15 @@ if __name__ == "__main__":
     initState = initialState(util, startVp)
     root = MCTSNode(util,initState,parent=None)
     mcts = MonteCarloTreeSearch(root,cparam=args.cp,decay=args.dr,targetCoverage=args.tc)
-    mcts.search(iteration=args.sn,fe=args.fe)
+    node, progress = mcts.search(iteration=args.sn,fe=args.fe)
 
     bestvps, coverage = mcts.test()
 
     print("Monte Carlo Tree Search find {} viewpoints for {:.2f}% coverage.".format(len(bestvps), coverage*100))
     vpGenerator.save(os.path.join(args.load, args.trajfile),bestvps)
+
+    # save training statistics
+    statFile = os.path.join(args.load, "mcts.csv")
+    dict = {'Iteration': [i for i in range(len(progress))], 'Coverage': progress}
+    df = pd.DataFrame(dict)
+    df.to_csv(statFile)

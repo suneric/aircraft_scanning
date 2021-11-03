@@ -22,7 +22,7 @@ sudo sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable `ls
 wget https://packages.osrfoundation.org/gazebo.key -O - | sudo apt-key add -
 sudo apt-get install gazebo9
 ```
-4. install [realsense sdk](https://github.com/IntelRealSense/librealsense/blob/master/doc/distribution_linux.md) and [realsense-ros](https://github.com/IntelRealSense/realsense-ros)(compile from source) 
+4. install [realsense sdk](https://github.com/IntelRealSense/librealsense/blob/master/doc/distribution_linux.md) and [realsense-ros](https://github.com/IntelRealSense/realsense-ros)(compile from source)
 ```
 sudo apt-get install librealsense2-dkms
 sudo apt-get install librealsense2-utils
@@ -51,7 +51,7 @@ some dependencies for gazebo-ros-pkgs are required.
 - aircraft_scanning_visualize. the package of visualizing the point cloud acqruired by realsense camera.
 - aircraft_scanning_gazebo. the package of gazebo simulation
 - aircraft_scanning_teleop. the package of teleop operation for controlling the quadrotor and realsense camera.
-- aircraft_scanning_plan. the package of path planning with MonteCalorTreeSearch
+- aircraft_scanning_plan. the package of path planning with MonteCalorTreeSearch and MAX-MIN Ant System (MMAS)
 
 ## features
 - start gazebo simulation with teleop (make sure the teleop_twist_joy is installed)
@@ -75,3 +75,7 @@ python mcts_train.py --sn <simulation count> --ad <neighbors count> --tc <termin
 
 ## Developer
 Yufeng Sun | sunyf@mail.uc.edu | IRAS Lab @ University of Cincinnati
+
+
+## Reference
+- https://rosindustrial.org/3d-camera-survey

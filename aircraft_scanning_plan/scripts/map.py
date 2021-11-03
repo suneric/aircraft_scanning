@@ -142,8 +142,8 @@ class ViewPointGenerator:
         vps = []
         for c in range(len(grids)):
             base = (0,0)
-            if type == "random":
-                base = (random.randrange(map.height), random.randrange(map.width))
+            if self.type == "random":
+                base = (random.uniform(0,self.map.height), random.uniform(0,self.map.width))
             else:
                 base = grids[c].center()
 
@@ -250,8 +250,8 @@ class PlotHelper:
 
     def plotMap(self):
         self.ax.autoscale(enable=False)
-        self.ax.set_xlim([-10,self.map.width+10])
-        self.ax.set_ylim([-10,self.map.height+10])
+        self.ax.set_xlim([-5,self.map.width+5])
+        self.ax.set_ylim([-5,self.map.height+5])
         for grid in self.map.validGrids:
             patch = matplotlib.patches.Rectangle((grid.anchor),grid.length, grid.length, facecolor = "green", edgecolor='black',linewidth=1.0,alpha=0.2)
             self.ax.add_patch(patch)
@@ -262,15 +262,22 @@ class PlotHelper:
             self.plotViewPoint(vp,type)
         return
 
-    def plotViewPoint(self,vp,type="coverage"):
+    def plotViewPoint(self,vp,type=None):
         if type == "coverage":
             for id in vp.voxels:
                 grid = self.map.grid(id)
                 patch = matplotlib.patches.Rectangle((grid.anchor),grid.length, grid.length, facecolor = "red", edgecolor='black',linewidth=1.0,alpha=0.2)
                 self.ax.add_patch(patch)
-        else:
+        elif type == "point":
             x,y = vp.camera.position.x, vp.camera.position.y
-            self.ax.scatter([x],[y], s=1, c='red', marker='o')
+            self.ax.scatter([x],[y], s=3, c='blue', marker='o')
+        else:
+            for id in vp.voxels:
+                grid = self.map.grid(id)
+                patch = matplotlib.patches.Rectangle((grid.anchor),grid.length, grid.length, facecolor = "red", edgecolor='black',linewidth=1.0,alpha=0.2)
+                self.ax.add_patch(patch)
+            x,y = vp.camera.position.x, vp.camera.position.y
+            self.ax.scatter([x],[y], s=3, c='blue', marker='o')
         return
 
     def plotLines(self, vps, style='bo-',width=2, markersize=10, addArrow=False):
@@ -285,13 +292,16 @@ class PlotHelper:
         self.ax.axis('off')
         return
 
-    def drawTrajectory(self, vps,speed=10,drawline=True):
+    def drawTrajectory(self, vps, speed=10, drawline=True, markEnd=False, insertText=False):
         # draw map
         self.plotMap()
         plt.draw()
         # draw start viewpoint
         start = vps[0]
-        self.plotLines([start],'bh',markersize=16)
+        if markEnd:
+            self.plotLines([start],'bh',markersize=16)
+        else:
+            self.plotLines([start],markersize=8)
         self.plotViewPoint(start)
         plt.draw()
         plt.pause(1) # puase 1 second to start
@@ -305,16 +315,20 @@ class PlotHelper:
             else:
                 self.plotLines([next], markersize=8)
             self.plotViewPoint(next)
-            info.set_position((0,-2))
-            info.set_text("viewpoint index "+str(i+1)+ " of " + str(len(vps)))
+            if insertText:
+                info.set_position((0,-2))
+                info.set_text("viewpoint index "+str(i+1)+ " of " + str(len(vps)))
             plt.draw()
             dist = vpDistance(start,next)
             totalDist += dist
             plt.pause(dist/speed)
             start = next
+        if markEnd:
+            self.plotLines([start],'bo',markersize=16)
 
-        info.set_position((0,-2))
-        info.set_text("Done with {:.2f} meters traveling {} viewpoints.".format(totalDist,len(vps)))
+        if insertText:
+            info.set_position((0,-2))
+            info.set_text("Done with {:.2f} meters traveling {} viewpoints.".format(totalDist,len(vps)))
         return
 
     def show(self):

@@ -28,6 +28,9 @@ class ViewPoint(object):
         camera.orientation.w = ow
         return camera
 
+"""
+utility function of viewpoint
+"""
 def vpDistance(vp1, vp2):
     x1 = vp1.camera.position.x;
     y1 = vp1.camera.position.y;
@@ -40,6 +43,21 @@ def vpDistance(vp1, vp2):
 def vpOverlap(vp1, vp2):
     intersect = vp1.voxels & vp2.voxels
     return len(intersect)
+
+def nearestViewpoint(pos, vps):
+    x, y, z = pos[0],pos[1], pos[2]
+    minDist = MAXVALUE
+    idx = 0
+    for i in range(len(vps)):
+        vpx = vps[i].camera.position.x
+        vpy = vps[i].camera.position.y
+        vpz = vps[i].camera.position.z
+        dist = sqrt((x-vpx)*(x-vpx)+(y-vpy)*(y-vpy)+(z-vpz)*(z-vpz))
+        if dist < minDist:
+            minDist = dist
+            idx = i
+    print("nearest viewpoint index is {} for pos ({},{},{})".format(i,x,y,z))
+    return i
 
 class ViewPointUtil(object):
     def __init__(self, vps, actDim=None, cn=0.3):

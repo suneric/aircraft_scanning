@@ -13,6 +13,7 @@ from util import *
 import argparse
 import copy
 from map import *
+import pandas as pd
 
 """
 Greedy Set Covering
@@ -50,13 +51,13 @@ class SCPSolver:
         t1 = time.clock()
 
         # duplicate grid
-        duplicate1, duplicate2 = self.computeDuplication(universe,minCover)
+        coverage, duplicate1, duplicate2 = self.computeDuplication(universe,minCover)
         # return the view points
         minvps = []
         for s in minCover:
             index = subsets.index(s)
-            minvps.append(vps[index])
-        print("Find {} viewpoints in {} candidates in {:.3f} secs with duplication {:.2f} {:.2f}".format(len(minvps), len(self.vps), t1-t0, duplicate1, duplicate2))
+            minvps.append(self.vps[index])
+        print("Find {} viewpoints in {} candidates in {:.2f} secs with coverage {:.2f}%, duplication {:.2f}% {:.2f}%".format(len(minvps), len(self.vps), t1-t0, coverage, duplicate1, duplicate2))
         return minvps
 
     def setCover(self, universe, subsets, start):
@@ -74,23 +75,34 @@ class SCPSolver:
             coverage = float(len(covered)) / float(len(universe))
         return cover
 
-    def computeDuplication(self,universe, cover):
+    def computeDuplication(self,universe,cover):
         """
         duplicate1: minimum duplicaitoin with count overlap grid only once
         duplicate2: maximum duplicatioin with count grid whenever it overlap with another
         """
         intersectSet = set()
+        duplicate1 = 0
+        duplicate2 = 0
         for s1 in cover:
             for s2 in cover:
                 if s1 != s2:
                     s = s1 & s2 #interestion
                     for e in s:
-                        intersectSet.add(e)
-        #print(intersectSet)
-        totalLen = float(len(universe))
-        duplicate1 = float(len(intersectSet))/totalLen
-        duplicate2 = float(sum([len(subset) for subset in cover]) - totalLen)/totalLen
-        return duplicate1, duplicate2
+                        duplicate1 += 1
+                        if e not in intersectSet:
+                            intersectSet.add(e)
+                            duplicate2 += 1
+
+        allCover = set()
+        for s in cover:
+            allCover |= s
+
+        total = len(universe)
+        uncovered = len(universe)-len(allCover)
+        coverage = float(total-uncovered)/float(total)
+        duplicateRatio1 = float(duplicate1)/float(total)
+        duplicateRatio2 = float(duplicate2)/float(total)
+        return coverage*100, duplicateRatio1*100, duplicateRatio2*100
 
 EPSILON = 1e-6
 STAGNATION = 50
@@ -386,7 +398,7 @@ class ACO:
             self.generateSolutions()
             self.updateStatistics()
             self.updatePheromoneTrail()
-            self.searchControl() # for MMAS
+            #self.searchControl() # for MMAS
             self.iter += 1
             # console output
             lenValues = np.array([ant.tourLength for ant in self.colony])
@@ -479,3 +491,8 @@ if __name__ == '__main__':
 
     # save trajectory
     vpGenerator.save(os.path.join(args.load, args.trajfile),bestvps)
+    # save training statistics
+    statFile = os.path.join(args.load, "aco.csv")
+    dict = {'Iteration': [i for i in range(len(progress))], 'Distance': progress}
+    df = pd.DataFrame(dict)
+    df.to_csv(statFile)
