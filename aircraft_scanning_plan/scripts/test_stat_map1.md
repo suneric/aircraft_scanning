@@ -26,9 +26,12 @@ map|candidate viewpoints
 
 ### MAX-MIN Ant System on 92% coverage
 - performance with different hyper-parameters (alpha beta rho)
+
+rho=0.05|rho=0.2|rho=0.5
+:----:|:----:|:----:
 <img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MMAS-m1-rho005.png">|<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MMAS-m1-rho02.png">|<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MMAS-m1-rho05.png">
+
 - the best configures (hyper-parameters)
-![](image/MMAS-m1-best.png){:height="50%" width="50%"}
 <img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MMAS-m1-best.png" width=50% height=50%>
 - best tour
   - alpha=1, beta=2, rho=0.05
@@ -47,14 +50,21 @@ map|candidate viewpoints
 
 ### Monte Carlo Tree Search
 - neighbor viewpoints
+
 nc=0.5, 4 neighbor viewpoints|nc=0.8, 8 neighbor viewpoints
 :----:|:----:
 <img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/vpneighbor4-7070-5.jpeg">|<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/vpneighbor8-7070-8.jpeg">
+
 - performance with different hyper-parameters (nc: neighbor parameter, rc: reward parameter,  epsilon: terminal epsilon)
+
+e=0.005|e=0.2
+:----:|:----:
 <img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MCTS-m1-n4-e005.png">|<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MCTS-m1-n4-e02.png">
+
 - the best configures (hyper-parameters)
 <img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MCTS-m1-n4-best.png" width=50% height=50%>
 - best tour
+
 nc=0.5, rc=0.75, epsilon=0.2 | nc=0.5, rc=0.75, epsilon=0.05
 :----:|:----:
 <img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MCTS-m1-best-n4-nc05rc075e02.jpegg">|<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MMAS-m1-best-a5b7r005.jpeg">
