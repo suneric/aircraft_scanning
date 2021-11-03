@@ -45,7 +45,7 @@ rho=0.05|rho=0.2|rho=0.5
   - alpha=1, beta=3, rho=0.5
 <img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MMAS-m1-best-a1b3r05.jpeg" width=50% height=50%>
   - alpha=1, beta=5, rho=0.5
-<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MMAS-m1-best-a1b5r05.jpegg" width=50% height=50%>
+<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MMAS-m1-best-a1b5r05.jpeg" width=50% height=50%>
 
 
 ### Monte Carlo Tree Search
@@ -67,4 +67,4 @@ e=0.005|e=0.2
 
 nc=0.5, rc=0.75, epsilon=0.2 | nc=0.5, rc=0.75, epsilon=0.05
 :----:|:----:
-<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MCTS-m1-best-n4-nc05rc075e02.jpegg">|<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MMAS-m1-best-a5b7r005.jpeg">
+<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MCTS-m1-best-n4-nc05rc075e02.jpeg">|<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MMAS-m1-best-a5b7r005.jpeg">
