@@ -2,14 +2,14 @@
 
 ### Map
 - 30 meters x 30 meters, grid resolution is 1 meter, all grids are valid grid (green).
-![](image/map331.jpeg)
+![](image/map331.jpeg){:height="50%" width="50%"}
 
 ### Candidate viewpoints
 - working distance: 3 meters
 - fov: 70 degrees x 70 degrees
 - resolution: 1 meters
 - total count: 900
-![](image/vpcandidate-u-m1.jpeg)
+![](image/vpcandidate-u-m1.jpeg){:height="50%" width="50%"}
 
 ### Minimum Set Covering Problem (try 1000 times and select the solution with the least number of viewpoints)
 - 100% coverage: 49 viewpoints, 62% duplication (overlap grids), 26.67 unique duplication
@@ -25,34 +25,39 @@
 
 ### MAX-MIN Ant System on 92% coverage
 - performance with different hyper-parameters (alpha beta rho)
-![](image/MMAS-m1-rho005.png)
-![](image/MMAS-m1-rho02.png)
-![](image/MMAS-m1-rho05.png)
+![](image/MMAS-m1-rho005.png){:height="50%" width="50%"}
+![](image/MMAS-m1-rho02.png){:height="50%" width="50%"}
+![](image/MMAS-m1-rho05.png){:height="50%" width="50%"}
 - the best configures (hyper-parameters)
-![](image/MMAS-m1-best.png)
+![](image/MMAS-m1-best.png){:height="50%" width="50%"}
 - best tour
   - alpha=1, beta=2, rho=0.05
-![](image/MMAS-m1-best-a1b2r005.jpeg)
+![](image/MMAS-m1-best-a1b2r005.jpeg){:height="50%" width="50%"}
   - alpha=5, beta=7, rho=0.05
-![](image/MMAS-m1-best-a5b7r005.jpeg)
+![](image/MMAS-m1-best-a5b7r005.jpeg){:height="50%" width="50%"}
   - alpha=1, beta=3, rho=0.2
-![](image/MMAS-m1-best-a1b3r02.jpeg)
+![](image/MMAS-m1-best-a1b3r02.jpeg){:height="50%" width="50%"}
   - alpha=1, beta=5, rho=0.2
-![](image/MMAS-m1-best-a1b5r02.jpeg)
+![](image/MMAS-m1-best-a1b5r02.jpeg){:height="50%" width="50%"}
   - alpha=1, beta=3, rho=0.5
-![](image/MMAS-m1-best-a1b3r05.jpeg)
+![](image/MMAS-m1-best-a1b3r05.jpeg){:height="50%" width="50%"}
   - alpha=1, beta=5, rho=0.5
-![](image/MMAS-m1-best-a1b5r05.jpeg)
+![](image/MMAS-m1-best-a1b5r05.jpeg){:height="50%" width="50%"}
 
 
 ### Monte Carlo Tree Search
+- neighbor viewpoints
+nc=0.5, 4 neighbor viewpoints
+![](image/vpneighbor4-7070-5.jpeg){:height="50%" width="50%"}
+nc=0.8, 8 neighbor viewpoints
+![](image/vpneighbor8-7070-8.jpeg){:height="50%" width="50%"}
 - performance with different hyper-parameters (nc: neighbor parameter, rc: reward parameter,  epsilon: terminal epsilon)
-![](image/MCTS-m1-n4-e005.png)
-![](image/MCTS-m1-n4-e02.png)
+![](image/MCTS-m1-n4-e005.png){:height="50%" width="50%"}
+![](image/MCTS-m1-n4-e02.png){:height="50%" width="50%"}
 - the best configures (hyper-parameters)
-![](image/MCTS-m1-n4-best.png)
+![](image/MCTS-m1-n4-best.png){:height="50%" width="50%"}
 - best tour
   - nc=0.5, rc=0.75, epsilon=0.2
-![](image/MCTS-m1-best-n4-nc05rc075e02.jpeg)
+![](image/MCTS-m1-best-n4-nc05rc075e02.jpeg){:height="50%" width="50%"}
   - nc=0.5, rc=0.75, epsilon=0.05
-![](image/MMAS-m1-best-a5b7r005.jpeg)
+![](image/MMAS-m1-best-a5b7r005.jpeg){:height="50%" width="50%"}
