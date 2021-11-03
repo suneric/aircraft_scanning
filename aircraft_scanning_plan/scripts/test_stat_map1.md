@@ -1,7 +1,7 @@
-## TEST  
+## TEST of Map1  
 
-### Maps
-- Map1: 30 meters x 30 meters, grid resolution is 1 meter, all grids are valid grid (green).
+### Map
+- 30 meters x 30 meters, grid resolution is 1 meter, all grids are valid grid (green).
 ![](image/map331.jpeg)
 
 ### Candidate viewpoints
@@ -50,7 +50,7 @@
 ![](image/MCTS-m1-n4-e005.png)
 ![](image/MCTS-m1-n4-e02.png)
 - the best configures (hyper-parameters)
-![](image/MMAS-m1-n4-best.png)
+![](image/MCTS-m1-n4-best.png)
 - best tour
   - nc=0.5, rc=0.75, epsilon=0.2
 ![](image/MCTS-m1-best-n4-nc05rc075e02.jpeg)
