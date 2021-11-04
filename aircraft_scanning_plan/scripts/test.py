@@ -30,20 +30,11 @@ def compareACO(vps,save,tc):
     configs = []
     # test with different configs (alpha, beta, rho)
     configs.append((1,3,0.05)) # 1
-    configs.append((1,5,0.05))
-    configs.append((3,5,0.05))
-    configs.append((3,7,0.05))
     configs.append((5,7,0.05)) # 5
     configs.append((1,3,0.2))  # 6
     configs.append((1,5,0.2))  # 7
-    configs.append((3,5,0.2))
-    configs.append((3,7,0.2))
-    configs.append((5,7,0.2))
     configs.append((1,3,0.5))  # 11
     configs.append((1,5,0.5))  # 12
-    configs.append((3,5,0.5))
-    configs.append((3,7,0.5))
-    configs.append((5,7,0.5))
     # use set covering problem to find a minimun set of viewpoints
     startIdx = nearestViewpoint((0,0,0),vps)
     scp = SCPSolver(vps,startIdx,coverage=tc)
@@ -73,16 +64,12 @@ def testMCTS(vps,tc,nb,cn,cp,fe,dr,iter,i,save):
 def compareMCTS(vps,save,tc):
     configs = []
     # test with different configs (neighbor cp, reward cp, terminal epsilon)
-    configs.append((0.5,0.25,0.05)) # 1
-    configs.append((0.95,0.25,0.05))
-    configs.append((0.5,0.75,0.05)) # 3
-    configs.append((0.95,0.75,0.05))
-    configs.append((0.5,0.25,0.2)) # 5
-    configs.append((0.95,0.25,0.2))
-    configs.append((0.5,0.75,0.2)) # 7
-    configs.append((0.95,0.75,0.2))
+    configs.append((0.5,0.8,0.05,4)) # 3
+    configs.append((0.5,0.8,0.05,8)) # 3
+    configs.append((0.5,0.8,0.05,12)) # 3
+    configs.append((0.5,0.8,0.05,16)) # 3
     for i in range(len(configs)):
-        testMCTS(vps,tc,4,configs[i][0],configs[i][1],configs[i][2],0.9999,1000000,i,save)
+        testMCTS(vps,tc,configs[i][3],configs[i][0],configs[i][1],configs[i][2],0.9999,1000000,i,save)
     return
 
 

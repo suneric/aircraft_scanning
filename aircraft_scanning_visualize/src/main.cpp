@@ -383,7 +383,7 @@ void GenerateViewpoints(PCLViewer* viewer,
   {
     Eigen::Vector3f refNormal = segments[i].first;
     BBox bbox = segments[i].second;
-    viewCreator.GenerateCameraPositions(octree,distance,refNormal,bbox,cameras, height_min, height_max);
+    viewCreator.GenerateCameraPositions(octree,distance,refNormal,bbox,cameras,height_min,height_max);
   }
   std::cout << cameras.size() << " camere positions generated." << std::endl;
 

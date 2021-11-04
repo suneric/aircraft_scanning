@@ -57,7 +57,7 @@ nc=0.5, 4 neighbor viewpoints|nc=0.8, 8 neighbor viewpoints
 
 - performance with different hyper-parameters (nc: neighbor parameter, rc: reward parameter,  epsilon: terminal epsilon)
 
-e=0.005|e=0.2
+e=0.05|e=0.2
 :----:|:----:
 <img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MCTS-m1-n4-e005.png">|<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MCTS-m1-n4-e02.png">
 
@@ -67,4 +67,4 @@ e=0.005|e=0.2
 
 nc=0.5, rc=0.75, epsilon=0.2 | nc=0.5, rc=0.75, epsilon=0.05
 :----:|:----:
-<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MCTS-m1-best-n4-nc05rc075e02.jpeg">|<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MMAS-m1-best-a5b7r005.jpeg">
+<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MCTS-m1-best-n4-nc05rc075e02.jpeg">|<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MCTS-m1-best-n4-nc05rc075e005.jpeg">
