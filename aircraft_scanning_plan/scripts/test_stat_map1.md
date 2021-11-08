@@ -34,7 +34,7 @@ rho=0.05|rho=0.2|rho=0.5
 - the best configures (hyper-parameters)
 <img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MMAS-m1-best.png" width=50% height=50%>
 - best tour
-  - alpha=1, beta=2, rho=0.05
+  - alpha=1, beta=3, rho=0.05
 <img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MMAS-m1-best-a1b2r005.jpeg" width=50% height=50%>
   - alpha=5, beta=7, rho=0.05
 <img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MMAS-m1-best-a5b7r005.jpeg" width=50% height=50%>
@@ -82,9 +82,9 @@ ad=4 c1=100 c2=0.01 | ad=4 c1=50 c2=0.01
 
 ad=8 c1=100 c2=0.01 | ad=8 c1=50 c2=0.01
 :----: | :----:
-<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MCTS-m1-best-n8-nc05rc08e02c100c001.jpeg">|<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MCTS-m1-best-n8-nc05rc08e02c50c001.jpeg">
+<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MCTS-m1-best-n8-nc05rc08e01c100c001.jpeg">|<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MCTS-m1-best-n8-nc05rc08e01c50c001.jpeg">
 
 nc=0.5 rc=0.8 epsilon=0.02
 ad=4 c1=100 c2=0.01 | ad=4 c1=50 c2=0.01
-:----: | :----: 
+:----: | :----:
 <img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MCTS-m1-best-n4-nc05rc08e02c100c001.jpeg">|<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MCTS-m1-best-n4-nc05rc08e02c50c001.jpeg">
