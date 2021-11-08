@@ -30,11 +30,6 @@ def compareACO(vps,save,tc):
     configs = []
     # test with different configs (alpha, beta, rho)
     configs.append((1,3,0.05)) # 1
-    configs.append((5,7,0.05)) # 5
-    configs.append((1,3,0.2))  # 6
-    configs.append((1,5,0.2))  # 7
-    configs.append((1,3,0.5))  # 11
-    configs.append((1,5,0.5))  # 12
     # use set covering problem to find a minimun set of viewpoints
     startIdx = nearestViewpoint((0,0,0),vps)
     scp = SCPSolver(vps,startIdx,coverage=tc)
@@ -43,13 +38,13 @@ def compareACO(vps,save,tc):
         testACO(minvps,minvps.index(vps[startIdx]),tc,configs[i][0],configs[i][1],configs[i][2],2000,i,save)
     return
 
-def testMCTS(vps,tc,nb,cn,cp,fe,dr,iter,i,save):
+def testMCTS(vps,tc,nb,cn,cp,fe,dr,iter,i,save,c1,c2):
     print("test MCTS for {} configuration {:.2f} {} {} {} {} {:.6f} {}".format(i, tc, nb, cn, cp, fe, dr, iter))
     util = ViewPointUtil(vps=vps, actDim=nb, cn=cn)
     util.buildNeighborMap()
     startIdx = nearestViewpoint((0,0,0),vps)
     startVp = util.viewpoints[startIdx]
-    initState = initialState(util, startVp)
+    initState = initialState(util, startVp,c1,c2)
     root = MCTSNode(util,initState,parent=None)
     mcts = MonteCarloTreeSearch(root,cparam=cp,decay=dr,targetCoverage=tc)
     node, progress = mcts.search(iteration=iter,fe=fe)
@@ -63,13 +58,9 @@ def testMCTS(vps,tc,nb,cn,cp,fe,dr,iter,i,save):
 
 def compareMCTS(vps,save,tc):
     configs = []
-    # test with different configs (neighbor cp, reward cp, terminal epsilon)
-    configs.append((0.5,0.8,0.05,4)) # 3
-    configs.append((0.5,0.8,0.05,8)) # 3
-    configs.append((0.5,0.8,0.05,12)) # 3
-    configs.append((0.5,0.8,0.05,16)) # 3
+    configs.append((0.5,0.8,0.1,4,100,0.01)) # 3
     for i in range(len(configs)):
-        testMCTS(vps,tc,configs[i][3],configs[i][0],configs[i][1],configs[i][2],0.9999,1000000,i,save)
+        testMCTS(vps,tc,configs[i][3],configs[i][0],configs[i][1],configs[i][2],0.9999,1000000,i,save,configs[i][4],configs[i][5])
     return
 
 
