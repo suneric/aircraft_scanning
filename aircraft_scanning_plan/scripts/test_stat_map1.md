@@ -77,14 +77,14 @@ different coefficients will result different trajectory
 nc=0.5 rc=0.8 epsilon=0.01
 
 ad=4 c1=100 c2=0.01 | ad=4 c1=50 c2=0.01
-:----: | :----: | :----:
+:----: | :----:
 <img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MCTS-m1-best-n4-nc05rc08e01c100c001.jpeg">|<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MCTS-m1-best-n4-nc05rc08e01c50c001.jpeg">
 
 ad=8 c1=100 c2=0.01 | ad=8 c1=50 c2=0.01
-:----: | :----: | :----:
+:----: | :----:
 <img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MCTS-m1-best-n8-nc05rc08e02c100c001.jpeg">|<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MCTS-m1-best-n8-nc05rc08e02c50c001.jpeg">
 
 nc=0.5 rc=0.8 epsilon=0.02
 ad=4 c1=100 c2=0.01 | ad=4 c1=50 c2=0.01
-:----: | :----: | :----:
+:----: | :----: 
 <img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MCTS-m1-best-n4-nc05rc08e02c100c001.jpeg">|<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MCTS-m1-best-n4-nc05rc08e02c50c001.jpeg">
