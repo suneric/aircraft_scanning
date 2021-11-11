@@ -58,9 +58,9 @@ def testMCTS(vps,tc,nb,cn,cp,fe,dr,iter,i,save,c1,c2):
 
 def compareMCTS(vps,save,tc):
     configs = []
-    configs.append((0.5,0.8,0.1,4,100,0.01)) # 3
+    configs.append((0.5,0.8,0.2,4,100,0.01)) # 3
     for i in range(len(configs)):
-        testMCTS(vps,tc,configs[i][3],configs[i][0],configs[i][1],configs[i][2],0.9999,1000000,i,save,configs[i][4],configs[i][5])
+        testMCTS(vps,tc,configs[i][3],configs[i][0],configs[i][1],configs[i][2],0.99999,1000000,i,save,configs[i][4],configs[i][5])
     return
 
 
