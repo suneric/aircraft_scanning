@@ -15,6 +15,8 @@ import copy
 from map import *
 import pandas as pd
 
+np.random.seed(124)
+
 """
 Greedy Set Covering
 The main idea of the algorithm is to cover the universe taking every time the apprently most

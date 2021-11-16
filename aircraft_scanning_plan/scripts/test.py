@@ -15,6 +15,8 @@ from cpp_aco import *
 from cpp_mcts import *
 import pandas as pd
 
+np.random.seed(124)
+
 def testACO(vps,startIdx,tc,alpha,beta,rho,acIter,i,save):
     print("test ACO for {} configuration {:.2f} {} {} {} {:.2f}".format(i,tc,acIter,alpha,beta,rho))
     tspACO = ACO(vps=vps, startIdx=startIdx, ants=len(vps), alpha=alpha, beta=beta, rho=rho)
@@ -46,7 +48,7 @@ def testMCTS(vps,tc,nb,cn,cp,fe,dr,iter,i,save,c1,c2):
     startVp = util.viewpoints[startIdx]
     initState = initialState(util, startVp,c1,c2)
     root = MCTSNode(util,initState,parent=None)
-    mcts = MonteCarloTreeSearch(root,cparam=cp,decay=dr,targetCoverage=tc)
+    mcts = MonteCarloTreeSearch(util,root,cparam=cp,decay=dr,targetCoverage=tc)
     node, progress = mcts.search(iteration=iter,fe=fe)
     bestvps, coverage = mcts.test()
     trajectory = "mctsbest_"+str(i+1)
@@ -58,7 +60,7 @@ def testMCTS(vps,tc,nb,cn,cp,fe,dr,iter,i,save,c1,c2):
 
 def compareMCTS(vps,save,tc):
     configs = []
-    configs.append((0.5,0.8,0.2,4,100,0.01)) # 3
+    configs.append((0.5,0.8,0.2,4,10,0.01)) # 3
     for i in range(len(configs)):
         testMCTS(vps,tc,configs[i][3],configs[i][0],configs[i][1],configs[i][2],0.99999,1000000,i,save,configs[i][4],configs[i][5])
     return

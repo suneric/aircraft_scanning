@@ -61,9 +61,9 @@ def nearestViewpoint(pos, vps):
 
 class ViewPointUtil(object):
     def __init__(self, vps, actDim=None, cn=0.3):
-        self.viewpoints = vps
-        self.voxelMaxId = 0
         self.voxels = set()
+        self.viewpoints = []
+        self.initialViewpoints(vps)
         self.nbMap = []
         self.actDim = actDim
         self.cn = cn
@@ -74,15 +74,33 @@ class ViewPointUtil(object):
         else:
             return self.nbMap[vpIdx][0:size]
 
+    def initialViewpoints(self,vps):
+        self.originalvps = vps
+        allVoxels = set()
+        for vp in self.originalvps:
+            allVoxels |= vp.voxels
+
+        # update voxels for saving memory
+        allVoxelsList = list(allVoxels)
+        for vp in self.originalvps:
+            newVoxels = set()
+            for v in vp.voxels:
+                vIdx = allVoxelsList.index(v)
+                self.voxels.add(vIdx)
+                newVoxels.add(vIdx)
+            newVp = copy.deepcopy(vp)
+            newVp.voxels = newVoxels
+            self.viewpoints.append(newVp)
+        return
+
+    def originalViewpoint(self,vp):
+        vpIdx = self.viewpoints.index(vp)
+        return self.originalvps[vpIdx]
+
     """
     build a map for viewpoints
     """
     def buildNeighborMap(self):
-        # get all voxel
-        for vp in self.viewpoints:
-            self.voxels |= vp.voxels
-        self.voxelMaxId = max(self.voxels)
-
         print("=== start building neighbor map ===".format())
         dim = len(self.viewpoints)
         self.nbMap = [None]*dim

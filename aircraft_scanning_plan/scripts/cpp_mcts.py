@@ -16,6 +16,7 @@ import argparse
 import csv
 import pandas as pd
 
+np.random.seed(124)
 
 """
 State represent the visited viewpoints and covered grids
@@ -170,12 +171,13 @@ class MCTSNode(object):
 
 
 class MonteCarloTreeSearch(object):
-    def __init__(self, node, cparam, decay, targetCoverage):
+    def __init__(self, util, node, cparam, decay, targetCoverage):
         self.root = node
         self.epsilon = 1.0
         self.cparam = cparam
         self.decay = decay
         self.targetCoverage = targetCoverage
+        self.util = util
 
     def decayEpsilon(self, finalEpsilon=0.1):
         """
@@ -224,13 +226,13 @@ class MonteCarloTreeSearch(object):
         """
         bestvps = []
         node = self.root
-        bestvps.append(node.viewpoint())
+        bestvps.append(self.util.originalViewpoint(node.viewpoint()))
         coverage = node.state.coverage
         while not node.isTerminalNode():
 
             if node.isFullyExpanded():
                 node = node.best_child(c=self.cparam,e=0.0)
-                bestvps.append(node.viewpoint())
+                bestvps.append(self.util.originalViewpoint(node.viewpoint()))
                 coverage = node.state.coverage
             else:
                 break
@@ -244,7 +246,7 @@ reset / initial state
 def initialState(util, startVp, c1, c2):
     vpsState = [0]*len(util.viewpoints)
     vpsState[startVp.id] = 1
-    voxelState = [0]*(util.voxelMaxId+1)
+    voxelState = [0]*len(util.voxels)
     voxelCover = 0
     for v in startVp.voxels:
         voxelState[v] = 1
@@ -286,7 +288,7 @@ if __name__ == "__main__":
     startVp = util.viewpoints[startIdx]
     initState = initialState(util, startVp, args.c1, args.c2)
     root = MCTSNode(util,initState,parent=None)
-    mcts = MonteCarloTreeSearch(root,cparam=args.cp,decay=args.dr,targetCoverage=args.tc)
+    mcts = MonteCarloTreeSearch(util,root,cparam=args.cp,decay=args.dr,targetCoverage=args.tc)
     node, progress = mcts.search(iteration=args.sn,fe=args.fe)
 
     bestvps, coverage = mcts.test()
