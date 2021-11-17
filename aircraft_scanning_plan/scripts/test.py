@@ -40,13 +40,13 @@ def compareACO(vps,save,tc):
         testACO(minvps,minvps.index(vps[startIdx]),tc,configs[i][0],configs[i][1],configs[i][2],2000,i,save)
     return
 
-def testMCTS(vps,tc,nb,cn,cp,fe,dr,iter,i,save,c1,c2):
+def testMCTS(vps,tc,nb,cn,cp,fe,dr,iter,i,save):
     print("test MCTS for {} configuration {:.2f} {} {} {} {} {:.6f} {}".format(i, tc, nb, cn, cp, fe, dr, iter))
     util = ViewPointUtil(vps=vps, actDim=nb, cn=cn)
     util.buildNeighborMap()
     startIdx = nearestViewpoint((0,0,0),vps)
     startVp = util.viewpoints[startIdx]
-    initState = initialState(util, startVp,c1,c2)
+    initState = initialState(util, startVp)
     root = MCTSNode(util,initState,parent=None)
     mcts = MonteCarloTreeSearch(util,root,cparam=cp,decay=dr,targetCoverage=tc)
     node, progress = mcts.search(iteration=iter,fe=fe)
@@ -60,9 +60,19 @@ def testMCTS(vps,tc,nb,cn,cp,fe,dr,iter,i,save,c1,c2):
 
 def compareMCTS(vps,save,tc):
     configs = []
-    configs.append((0.5,0.8,0.2,4,10,0.01)) # 3
+    configs.append((0.5,0.0,0.2,4)) # 3
+    configs.append((0.5,0.1,0.2,4)) # 3
+    configs.append((0.5,0.2,0.2,4)) # 3
+    configs.append((0.5,0.3,0.2,4)) # 3
+    configs.append((0.5,0.4,0.2,4)) # 3
+    configs.append((0.5,0.5,0.2,4)) # 3
+    configs.append((0.5,0.6,0.2,4)) # 3
+    configs.append((0.5,0.7,0.2,4)) # 3
+    configs.append((0.5,0.8,0.2,4)) # 3
+    configs.append((0.5,0.9,0.2,4)) # 3
+    configs.append((0.5,1.0,0.2,4)) # 3
     for i in range(len(configs)):
-        testMCTS(vps,tc,configs[i][3],configs[i][0],configs[i][1],configs[i][2],0.99999,1000000,i,save,configs[i][4],configs[i][5])
+        testMCTS(vps,tc,configs[i][3],configs[i][0],configs[i][1],configs[i][2],0.99999,500000,i,save)
     return
 
 

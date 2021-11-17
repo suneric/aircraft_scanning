@@ -22,7 +22,7 @@ np.random.seed(124)
 State represent the visited viewpoints and covered grids
 """
 class MCTSState(object):
-    def __init__(self,util,currVp,vpsState,voxelState,cover,overlap,traveledDist=0.0,c1=100,c2=0.01):
+    def __init__(self,util,currVp,vpsState,voxelState,cover,overlap,traveledDist=0.0):
         self.util = util
         self.currVp = currVp
         self.vpsState = vpsState
@@ -33,8 +33,6 @@ class MCTSState(object):
         self.nbvps = self.util.neighbors(currVp.id, self.util.actDim)
         self.coverage = float(cover)/float(len(self.util.voxels))
         self.overlapRatio = float(overlap)/float(len(self.util.voxels))
-        self.c1 = c1
-        self.c2 = c2
 
     def isGameOver(self):
         return self.coverage == 1.0 or len(self.neighbors()) == 0
@@ -44,9 +42,8 @@ class MCTSState(object):
         return a score indicating how good the state is
         considering coverage, overlap and traveled distance
         """
-        # print("score", 100*self.coverage-10*self.overlapRatio-0.01*self.traveledDist, self.coverage, self.overlapRatio, self.traveledDist)
-        # change the coefficients of overlapRatio and traveledDist will result different trajectory
-        return 100*self.coverage-self.c1*self.overlapRatio-self.c2*self.traveledDist
+        s = 1.0*self.coverage-1.0*self.overlapRatio+(1.0/self.traveledDist)
+        return s
 
     def neighbors(self):
         """
@@ -86,7 +83,7 @@ class MCTSState(object):
         cover = self.cover + newCover
         overlap = self.overlap + newOverlap
         dist = self.traveledDist + vpDistance(self.currVp, nextVp)
-        return MCTSState(self.util,nextVp,vpsState,voxelState,cover,overlap,dist,self.c1,self.c2)
+        return MCTSState(self.util,nextVp,vpsState,voxelState,cover,overlap,dist)
 
 
 # base Node
@@ -148,6 +145,7 @@ class MCTSNode(object):
             vp = self.util.viewpoints[vpIdx]
             cState = cState.move(vp)
             score = cState.score()
+        #print("===rollout score {:.2f} ===".format(score))
         return score
 
     def expand(self):
@@ -243,7 +241,7 @@ class MonteCarloTreeSearch(object):
 """
 reset / initial state
 """
-def initialState(util, startVp, c1, c2):
+def initialState(util, startVp):
     vpsState = [0]*len(util.viewpoints)
     vpsState[startVp.id] = 1
     voxelState = [0]*len(util.voxels)
@@ -251,7 +249,7 @@ def initialState(util, startVp, c1, c2):
     for v in startVp.voxels:
         voxelState[v] = 1
         voxelCover += 1
-    state = MCTSState(util,startVp,vpsState,voxelState,voxelCover,0,0.0,c1,c2)
+    state = MCTSState(util,startVp,vpsState,voxelState,voxelCover,0,0.0)
     return state
 
 ############################################################
@@ -269,8 +267,6 @@ def getParameters():
     parser.add_argument('--cp', type=float, default=0.38) # control param q value
     parser.add_argument('--dr', type=float, default=0.998) # decay rate
     parser.add_argument('--fe', type=float, default=0.1) # final epsilon
-    parser.add_argument('--c1', type=float, default=100) # reward coefficient for overlapRatio
-    parser.add_argument('--c2', type=float, default=0.01) # reward coefficient for distance
 
     return parser.parse_args()
 
@@ -286,7 +282,7 @@ if __name__ == "__main__":
     # monte carlo tree search
     startIdx = 0 #np.random.randint(len(vps))
     startVp = util.viewpoints[startIdx]
-    initState = initialState(util, startVp, args.c1, args.c2)
+    initState = initialState(util, startVp)
     root = MCTSNode(util,initState,parent=None)
     mcts = MonteCarloTreeSearch(util,root,cparam=args.cp,decay=args.dr,targetCoverage=args.tc)
     node, progress = mcts.search(iteration=args.sn,fe=args.fe)
