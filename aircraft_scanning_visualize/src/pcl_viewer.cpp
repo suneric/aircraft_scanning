@@ -95,12 +95,12 @@ void PCLViewer::AddMesh(const pcl::PolygonMesh& mesh)
   }
 }
 
-void PCLViewer::AddCoordinateSystem(const Eigen::Affine3f& camPose, int idIndex, int vp, bool removeall)
+void PCLViewer::AddCoordinateSystem(const Eigen::Affine3f& camPose, int idIndex, double scale,int vp, bool removeall)
 {
   std::string name("ccs");
   name.append(std::to_string(vp));
   name.append(std::to_string(idIndex));
-  m_viewer->addCoordinateSystem(0.5,camPose,name,vp);
+  m_viewer->addCoordinateSystem(scale,camPose,name,vp);
 }
 
 void PCLViewer::SpinOnce(double duration)
@@ -167,7 +167,7 @@ void PCLViewer::AddCube(const WSPoint& point, double s, const std::string& cubeN
   m_viewer->addCube(point.x-s,point.x+s,point.y-s,point.y+s,point.z-s,point.z+s,r,g,b,cubeName,vp);
   m_viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_REPRESENTATION, 1, cubeName);
   m_viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_OPACITY, 0.2, cubeName);
-  m_viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_LINE_WIDTH, 2, cubeName);
+  m_viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_LINE_WIDTH, 3, cubeName);
 }
 
 void PCLViewer::AddText(const std::string& text, const std::string& id, int vp)

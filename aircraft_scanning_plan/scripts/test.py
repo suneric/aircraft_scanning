@@ -44,7 +44,7 @@ def testMCTS(vps,tc,nb,cn,cp,fe,dr,iter,i,save):
     print("test MCTS for {} configuration {:.2f} {} {} {} {} {:.6f} {}".format(i, tc, nb, cn, cp, fe, dr, iter))
     util = ViewPointUtil(vps=vps, actDim=nb, cn=cn)
     util.buildNeighborMap()
-    startIdx = nearestViewpoint((0,0,0),vps)
+    startIdx = 0 #nearestViewpoint((0,0,0),vps)
     startVp = util.viewpoints[startIdx]
     initState = initialState(util, startVp)
     root = MCTSNode(util,initState,parent=None)
@@ -72,7 +72,7 @@ def compareMCTS(vps,save,tc):
     configs.append((0.5,0.9,0.2,4)) # 3
     configs.append((0.5,1.0,0.2,4)) # 3
     for i in range(len(configs)):
-        testMCTS(vps,tc,configs[i][3],configs[i][0],configs[i][1],configs[i][2],0.99999,500000,i,save)
+        testMCTS(vps,tc,configs[i][3],configs[i][0],configs[i][1],configs[i][2],0.9999,100000,i,save)
     return
 
 

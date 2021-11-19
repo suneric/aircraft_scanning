@@ -120,6 +120,40 @@ def plotCompareMCTS(files,legends,colors,maxIter=None):
     fig.show()
     return
 
+def plotCompareMCTS_RC():
+    rc = [0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
+    coverage = [94.56,91.00,96.44,99.56,100.00,99.56,100.0,99.56,100.00,100.00,100.00]
+    vpcount = [25,23,24,25,25,25,25,25,25,25,25]
+    travel_dist = [168.07,154.07,161.07,168.07,168.00,168.07,168.00,168.07,168.00,168.00,168.00]
+
+    fig = go.Figure()
+    title = "Monte Carlo Tree Search Reward Control Parameter"
+    fig.add_trace(go.Scatter(x = rc, y = coverage, name="coverage (%)", marker=dict(color="#ff5511")))
+    fig.add_trace(go.Scatter(x = rc, y = vpcount, name="number of viewpoints", marker=dict(color="#33ee22")))
+    fig.add_trace(go.Scatter(x = rc, y = travel_dist, name="travel distance (meters)", marker=dict(color="#1155ff")))
+
+    fig.update_layout(
+        title=title,
+        xaxis_title="Reward Control Parameter ($\sigma$)",
+        yaxis_title="",
+        legend=dict(
+            x=0.6,
+            y=0.1,
+            font=dict(
+                family="Arial",
+                size=17,
+                color="Black"
+            )
+        ),
+        font=dict(
+            family="Arial",
+            size=20,
+            color="Black"
+        ),
+        plot_bgcolor="rgb(255,255,255)"
+    )
+    fig.show()
+    return
 
 def names(s):
     try:
@@ -147,8 +181,11 @@ if __name__ == "__main__":
     files = []
     for filename in filenames:
         files.append(os.path.join(args.load,filename+".csv"))
+    print(files)
 
     if args.type == "ACO":
         plotCompareACO(files,legends,colors,args.maxIter)
     if args.type == "MCTS":
         plotCompareMCTS(files,legends,colors,args.maxIter)
+    if args.type == "MCTS_RC":
+        plotCompareMCTS_RC()

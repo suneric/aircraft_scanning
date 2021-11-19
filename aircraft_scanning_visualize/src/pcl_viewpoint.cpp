@@ -89,7 +89,7 @@ WSPointCloudPtr PCLViewPoint::CameraViewVoxels(const PCLOctree& tree, const Eige
   Eigen::Vector3f cameraPt(camMatrix(0,3),camMatrix(1,3),camMatrix(2,3));
   // get voxels in camera frustum culling
   WSPointCloudPtr viewCloud(new WSPointCloud);
-  if(FrustumCulling(tree.VoxelCentroidCloud(),camera.matrix(),68,42,0.1,5.0,viewCloud))
+  if(FrustumCulling(tree.VoxelCentroidCloud(),camera.matrix(),80,80,0.1,5.0,viewCloud))
   {
     std::vector<WSPoint> visibleVoxels;
     for (int i = 0; i < viewCloud->points.size(); ++i)
@@ -207,7 +207,7 @@ void PCLViewPoint::SaveToFile(const std::string& output,
     if (voxelMap[i].size() == 0){
       continue;
     }
-    
+
     Cartesion vp = CameraPose2ViewPoint(cameras[i]);
     // each line: viewpoint_idx px py pz ox oy oz ow voxel_indices ... \n
     tFile << i << " " << vp.pos_x << " "

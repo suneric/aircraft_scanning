@@ -66,6 +66,11 @@ void GenerateScanningPath(PCLViewer* viewer,
   double resolution
 );
 
+double Distance(const WSPoint& pt1, const WSPoint& pt2)
+{
+  return sqrt((pt1.x-pt2.x)*(pt1.x-pt2.x)+(pt1.y-pt2.y)*(pt1.y-pt2.y)+(pt1.z-pt2.z)*(pt1.z-pt2.z));
+}
+
 void AddCubes(PCLViewer* viewer,const std::vector<WSPoint>& points, const std::string& nameprefix, double voxelLen, int vp, double r, double g, double b)
 {
   for (size_t i = 0; i < points.size(); ++i)
@@ -269,6 +274,7 @@ void DisplayTrajectory(PCLViewer* viewer, const std::string& dir, const std::str
     mtx.unlock();
   }
 
+  double distance = 0.0;
   WSPoint startPt, endPt;
   std::vector<int> coveredVoxels;
   for (size_t i = 0; i < cameras.size(); ++i)
@@ -285,6 +291,8 @@ void DisplayTrajectory(PCLViewer* viewer, const std::string& dir, const std::str
         endPt.y = camera.matrix()(1,3);
         endPt.z = camera.matrix()(2,3);
       }
+
+      distance += Distance(startPt,endPt);
 
       std::vector<int> indices;
       WSPointCloudPtr voxelCloud = viewCreator.CameraViewVoxels(octree, camera, indices);
@@ -306,7 +314,7 @@ void DisplayTrajectory(PCLViewer* viewer, const std::string& dir, const std::str
       //std::string coverage(", total coverage: ");
       //coverage.append(std::to_string(dCoverage)).append(" %");
       //text.append(coverage);
-      viewer->AddText(text, "text");
+      //viewer->AddText(text, "text");
       if (type == -1)
       {
         viewer->AddCoordinateSystem(camera,i,0,true);
@@ -317,12 +325,24 @@ void DisplayTrajectory(PCLViewer* viewer, const std::string& dir, const std::str
       }
       else if (type == -3)
       {
-        viewer->AddCoordinateSystem(camera,i,0,true);
+        if (i == 0 || i == cameras.size()-1){
+          viewer->AddCoordinateSystem(camera,i,1.0,0,true);
+        }
+        else
+        {
+            viewer->AddCoordinateSystem(camera,i,0.5,0,true);
+        }
         viewer->AddLine(startPt,endPt,i,0.0,0.0,0.0);
       }
       else
       {
-        viewer->AddCoordinateSystem(camera,i,0,true);
+        if (i == 0 || i == cameras.size()-1){
+          viewer->AddCoordinateSystem(camera,i,1.0,0,true);
+        }
+        else
+        {
+          viewer->AddCoordinateSystem(camera,i,0.5,0,true);
+        }
         viewer->AddLine(startPt,endPt,i,0.0,0.0,0.0);
         AddCubes(viewer, vCenters, std::to_string(i), voxelLen, 0, 1.0,0.0,0.0);
       }
@@ -330,6 +350,8 @@ void DisplayTrajectory(PCLViewer* viewer, const std::string& dir, const std::str
       // Sleep for 2 seconds for the ply file
     //  std::this_thread::sleep_for(std::chrono::seconds(1));
   }
+
+  std::cout << "trajectory length: " << distance << " meters." << std::endl;
 }
 
 // generate viewpoints with distance to the aircraft and resolution of octree
@@ -462,15 +484,16 @@ void GenerateViewpoints(PCLViewer* viewer,
   }
   else
   {
+    int camereIndex = 161;
     std::string name("view_frustum");
     name.append("_").append(std::to_string(0));
     std::vector<int> visibleVoxelIndices;
-    WSPointCloudPtr viewCloud = viewCreator.CameraViewVoxels(octree2,cameras[0],visibleVoxelIndices);
+    WSPointCloudPtr viewCloud = viewCreator.CameraViewVoxels(octree2,cameras[camereIndex],visibleVoxelIndices);
     std::vector<WSPoint> centroids;
     for (size_t i = 0; i < viewCloud->points.size(); ++i)
       centroids.push_back(viewCloud->points[i]);
-    AddCubes(viewer, centroids, name, voxelLen, vp, 0.0,0.0,1.0);
-    viewer->AddCoordinateSystem(cameras[0],display);
+    AddCubes(viewer, centroids, name, voxelLen, vp, 1.0,0.0,0.0);
+    viewer->AddCoordinateSystem(cameras[camereIndex],display);
   }
 }
 
