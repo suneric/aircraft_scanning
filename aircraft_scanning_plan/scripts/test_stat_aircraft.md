@@ -14,15 +14,15 @@
 
 - SCP+ACO (working distance = 3 meters)
   - 109 viewpoints selected, travel distance is 195.39 meters
-<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/aircraft/acobest_f3.jpg" width=50% height=50%>
+<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/aircraft/acobest_fuselage_f3.jpg" width=50% height=50%>
 
 - SCP+ACO (working distance = 4 meters)
   - 78 viewpoints selected, travel distance is 189.06 meters
-<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/aircraft/acobest_f4.jpg" width=50% height=50%>
+<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/aircraft/acobest_fuselage_f4.jpg" width=50% height=50%>
 
 - SCP+ACO (working distance = 5 meters)
   - 56 viewpoints selected, travel distance is 163.66 meters
-<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/aircraft/acobest_f5.jpg" width=50% height=50%>
+<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/aircraft/acobest_fuselage_f5.jpg" width=50% height=50%>
 
 - MCTS (working distance = 3 meters)
   - 54 viewpoints seleted, travel distance 292.297 meters, 84.04% coverage, terminal $\epsilon$ = 0.01
