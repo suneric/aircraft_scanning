@@ -51,40 +51,22 @@ rho=0.05|rho=0.2|rho=0.5
 ### Monte Carlo Tree Search
 - neighbor viewpoints
 
-nc=0.5, 4 neighbor viewpoints|nc=0.8, 8 neighbor viewpoints
-:----:|:----:
-<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/vpneighbor4-7070-5.jpeg">|<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/vpneighbor8-7070-8.jpeg">
 
-- performance with different hyper-parameters (nc: neighbor parameter, rc: reward parameter,  epsilon: terminal epsilon)
+### Comparison
+- 30 meters X 30 meters, discritized with 900 square grid (length of 1 meter)
+- number of candidate viewpoints: 900
 
-e=0.05|e=0.2
-:----:|:----:
-<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MCTS-m1-n4-e005.png">|<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MCTS-m1-n4-e02.png">
+- SCP+ACO:
+- best solution: 26 viewpoints selected, travel distance is 138.13 meters.
+<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/results/acobest_1_8080.jpeg" width=50% height=50%>
 
-- the best configures (hyper-parameters)
-<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MCTS-m1-n4-best.png" width=50% height=50%>
-- best tour
+- MCTS:
+  - neighborhood viewpoints control parameter: 0.5
+  - max simulation iteration: 100000
+  - terminal epsilon: 0.1, with decay rate 0.9999
 
-nc=0.5, rc=0.75, epsilon=0.2 | nc=0.5, rc=0.75, epsilon=0.05
-:----:|:----:
-<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MCTS-m1-best-n4-nc05rc075e02.jpeg">|<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MCTS-m1-best-n4-nc05rc075e005.jpeg">
-
-- score : a x coverage - b x overlap_ratio - c x traveled_distance
-  - a = 100
-  - b = [1-100]
-  - c = [0.01 - 0.1]
-different coefficients will result different trajectory
-nc=0.5 rc=0.8 epsilon=0.01
-
-ad=4 c1=100 c2=0.01 | ad=4 c1=50 c2=0.01
-:----: | :----:
-<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MCTS-m1-best-n4-nc05rc08e01c100c001.jpeg">|<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MCTS-m1-best-n4-nc05rc08e01c50c001.jpeg">
-
-ad=8 c1=100 c2=0.01 | ad=8 c1=50 c2=0.01
-:----: | :----:
-<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MCTS-m1-best-n8-nc05rc08e01c100c001.jpeg">|<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MCTS-m1-best-n8-nc05rc08e01c50c001.jpeg">
-
-nc=0.5 rc=0.8 epsilon=0.02
-ad=4 c1=100 c2=0.01 | ad=4 c1=50 c2=0.01
-:----: | :----:
-<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MCTS-m1-best-n4-nc05rc08e02c100c001.jpeg">|<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MCTS-m1-best-n4-nc05rc08e02c50c001.jpeg">
+  - number of neighborhood viewpoints: 3
+  - Number of iteration required to achieve 100% coverage
+<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/results/MCTS_RC_AD3.jpeg" width=50% height=50%>
+  - best solution: 25 viewpoints selected, travel distance is 168 meters
+<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/results/mctsbest_1_8080_3.jpeg" width=50% height=50%>

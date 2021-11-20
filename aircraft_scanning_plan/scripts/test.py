@@ -60,19 +60,19 @@ def testMCTS(vps,tc,nb,cn,cp,fe,dr,iter,i,save):
 
 def compareMCTS(vps,save,tc):
     configs = []
-    configs.append((0.5,0.0,0.2,4)) # 3
-    configs.append((0.5,0.1,0.2,4)) # 3
-    configs.append((0.5,0.2,0.2,4)) # 3
-    configs.append((0.5,0.3,0.2,4)) # 3
-    configs.append((0.5,0.4,0.2,4)) # 3
-    configs.append((0.5,0.5,0.2,4)) # 3
-    configs.append((0.5,0.6,0.2,4)) # 3
-    configs.append((0.5,0.7,0.2,4)) # 3
-    configs.append((0.5,0.8,0.2,4)) # 3
-    configs.append((0.5,0.9,0.2,4)) # 3
-    configs.append((0.5,1.0,0.2,4)) # 3
+    configs.append((0.5,0.0,0.1,4)) # 3
+    configs.append((0.5,0.1,0.1,4)) # 3
+    configs.append((0.5,0.2,0.1,4)) # 3
+    configs.append((0.5,0.3,0.1,4)) # 3
+    configs.append((0.5,0.4,0.1,4)) # 3
+    configs.append((0.5,0.5,0.1,4)) # 3
+    configs.append((0.5,0.6,0.1,4)) # 3
+    configs.append((0.5,0.7,0.1,4)) # 3
+    configs.append((0.5,0.8,0.1,4)) # 3
+    configs.append((0.5,0.9,0.1,4)) # 3
+    configs.append((0.5,1.0,0.1,4)) # 3
     for i in range(len(configs)):
-        testMCTS(vps,tc,configs[i][3],configs[i][0],configs[i][1],configs[i][2],0.9999,100000,i,save)
+        testMCTS(vps,tc,configs[i][3],configs[i][0],configs[i][1],configs[i][2],0.999,100000,i,save)
     return
 
 

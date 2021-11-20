@@ -5,16 +5,15 @@
 <img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/map961.jpeg" width=50% height=50%>
 
 - Candidate viewpoints
-  - working distance: 3 meters
-  - fov: 70 degrees x 70 degrees
-  - resolution: 1 meters
-  - total count: 5400
+  - working distance: 5 meters
+  - fov: 80 degrees x 80 degrees
+  - resolution: 3 meters
+  - total count: 600
 
-### Set covering problem solver
-  - find 213 viewpoints from 5400 viewpoints candidate
+### Comparison
 
-### MAX-MIN Ant System on 92% coverage
-  - performance with different hyper-parameters (alpha = 1 beta = 3 rho = 0.05)
-<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/image/MMAS-m2-best-a1b3r005.jpeg" width=50% height=50%>
+- SCP+ACO
+  - 91 viewpoints selected, travel distance is 640.16 meters
+<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/results/acobest_2_8080.jpeg" width=50% height=50%>  
 
-### Monte Carlo Tree Search
+- MCTS

@@ -42,7 +42,7 @@ class MCTSState(object):
         return a score indicating how good the state is
         considering coverage, overlap and traveled distance
         """
-        s = 1.0*self.coverage-1.0*self.overlapRatio+(1.0/self.traveledDist)
+        s = 100*self.coverage-10*self.overlapRatio-0.01*self.traveledDist
         return s
 
     def neighbors(self):
@@ -50,13 +50,10 @@ class MCTSState(object):
         return neighbor viewpoints which have not been visited
         """
         unvisited = []
-        for i in range(len(self.nbvps)-1):
-            if len(unvisited) >= self.util.actDim:
-                break
-            else:
-                vpIdx = self.nbvps[i]
-                if not self.vpsState[vpIdx]:
-                    unvisited.append(vpIdx)
+        for i in range(len(self.nbvps)):
+            vpIdx = self.nbvps[i]
+            if not self.vpsState[vpIdx]:
+                unvisited.append(vpIdx)
         return unvisited
 
     def move(self, nextVp):
@@ -145,7 +142,7 @@ class MCTSNode(object):
             vp = self.util.viewpoints[vpIdx]
             cState = cState.move(vp)
             score = cState.score()
-        #print("===rollout score {:.2f} ===".format(score))
+        print("===rollout score {:.2f} ===".format(score))
         return score
 
     def expand(self):

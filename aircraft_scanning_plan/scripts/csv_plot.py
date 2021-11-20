@@ -102,7 +102,7 @@ def plotCompareMCTS(files,legends,colors,maxIter=None):
         xaxis_title="Iteration",
         yaxis_title="Coverage",
         legend=dict(
-            x=0.6,
+            x=0.8,
             y=0.1,
             font=dict(
                 family="Arial",
@@ -122,20 +122,16 @@ def plotCompareMCTS(files,legends,colors,maxIter=None):
 
 def plotCompareMCTS_RC():
     rc = [0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
-    coverage = [94.56,91.00,96.44,99.56,100.00,99.56,100.0,99.56,100.00,100.00,100.00]
-    vpcount = [25,23,24,25,25,25,25,25,25,25,25]
-    travel_dist = [168.07,154.07,161.07,168.07,168.00,168.07,168.00,168.07,168.00,168.00,168.00]
+    iteration = [1039,972,987,928,1789,978,900,1130,1085,1008,1190]
 
     fig = go.Figure()
     title = "Monte Carlo Tree Search Reward Control Parameter"
-    fig.add_trace(go.Scatter(x = rc, y = coverage, name="coverage (%)", marker=dict(color="#ff5511")))
-    fig.add_trace(go.Scatter(x = rc, y = vpcount, name="number of viewpoints", marker=dict(color="#33ee22")))
-    fig.add_trace(go.Scatter(x = rc, y = travel_dist, name="travel distance (meters)", marker=dict(color="#1155ff")))
+    fig.add_trace(go.Scatter(x = rc, y = iteration, name="coverage (%)", marker=dict(color="#ff5511")))
 
     fig.update_layout(
         title=title,
         xaxis_title="Reward Control Parameter ($\sigma$)",
-        yaxis_title="",
+        yaxis_title="Number of Iteration for 100% Coverage",
         legend=dict(
             x=0.6,
             y=0.1,
@@ -175,7 +171,7 @@ def get_args():
 if __name__ == "__main__":
     args = get_args()
     #plotStat(os.path.join(args.load,args.csv),type=args.type)
-    colors = ['#ff5511','#33ee22','#1155ff','#552233','#ff22dd','#ddc3ee','#906c6d','#147a6f','#a2cab9','#ffaeae']
+    colors = ['#ff5511','#33ee22','#1155ff','#552233','#ff22dd','#ddc3ee','#906c6d','#147a6f','#a2cab9','#ffaeae',"#ffeeaa"]
     filenames = args.csv
     legends = args.legend
     files = []
