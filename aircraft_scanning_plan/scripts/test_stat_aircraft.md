@@ -1,5 +1,14 @@
 ## TEST for aircraft scanning
 
+### Experiment Environment
+- Target Aircraft
+<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/results/uav.tif" width=50% height=50%>
+- UAV-Camera system
+<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/results/airline757.tif" width=50% height=50%>
+
+- Octree representation of the aircraft
+<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/results/octree_representation.tif" width=50% height=50%>
+
 ### upper part of fuselage
 - working distance: 3 meters, 4 meters, and 5 meters
 - resolution: 1 meter
@@ -7,27 +16,21 @@
 - near clip: 0.1 meters
 - far clip: 5.0 meters
 - number of candidate viewpoints: 250
-<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/aircraft/vpsfuselage-wd3r1.jpg" width=50% height=50%>
+<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/results/candidate_vps.tif" width=50% height=50%>
 
 
 ### Comparison
 
 - SCP+ACO (working distance = 3 meters)
   - 109 viewpoints selected, travel distance is 195.39 meters
-<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/aircraft/acobest_fuselage_f3.jpg" width=50% height=50%>
+<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/results/acobest_f3.tif" width=50% height=50%>
 
-- SCP+ACO (working distance = 4 meters)
-  - 78 viewpoints selected, travel distance is 189.06 meters
-<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/aircraft/acobest_fuselage_f4.jpg" width=50% height=50%>
+  - dense model
+<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/results/densemodel_aco.tif" width=50% height=50%>  
 
-- SCP+ACO (working distance = 5 meters)
-  - 56 viewpoints selected, travel distance is 163.66 meters
-<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/aircraft/acobest_fuselage_f5.jpg" width=50% height=50%>
+- MCTS (working distance = 3 meters), after alter the tour
+  - 55 viewpoints selected, travel distance 152.371 meters, 85.89% coverage, terminal e = 0.1, number of neighborhood viewpoints = 6, decay rate = 0.99999, simulation iteration count = 1,000,000, sigma = 0.9
+  <img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/aircraft/mctsbest_f3.tif" width=50% height=50%>
 
-- MCTS (working distance = 3 meters)
-  - 54 viewpoints seleted, travel distance 292.297 meters, 84.04% coverage, terminal $\epsilon$ = 0.01
-  <img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/aircraft/mctsbest_fuselage_f3.jpg" width=50% height=50%>
-
-- MCTS (working distance = 4 meters)
-  - 46 viewpoints seleted, travel distance 325.544 meters, 85.01% coverage, terminal $\epsilon$ = 0.1
-<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/aircraft/mctsbest_fuselage_f4.jpg" width=50% height=50%>
+  - dense model
+ <img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/results/densemodel_mcts.tif" width=50% height=50%>  

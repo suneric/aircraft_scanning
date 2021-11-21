@@ -119,13 +119,13 @@ int main(int argc, char** argv) try
   }
   else if (task == 2)
   {
-    std::thread t(UpdatePointCloud, &viewer, dir, bFilter,resolution);
+    UpdatePointCloud(&viewer, dir, bFilter,resolution);
     while (!viewer.IsStop()) {
       mtx.lock();
       viewer.SpinOnce();
       mtx.unlock();
     }
-    t.join();
+    //t.join();
   }
   else if (task == 3)
   {
@@ -184,8 +184,6 @@ void UpdatePointCloud(PCLViewer* viewer, const std::string& dir, bool bFilter,do
 
   int all = 0;
 
-  while (!viewer->IsStop())
-  {
     std::vector<std::string> allfiles;
     boost::filesystem::directory_iterator itr(dir);
     for (; itr != boost::filesystem::directory_iterator(); ++itr)
@@ -215,18 +213,12 @@ void UpdatePointCloud(PCLViewer* viewer, const std::string& dir, bool bFilter,do
             bNewCloud = true;
             files.push_back(file);
         }
-     }
+      }
 
-     if (bNewCloud)
-     {
-       mtx.lock();
-       viewer->AddPointCloud(cloud);
-       mtx.unlock();
-     }
 
-     // Sleep for 2 seconds for the ply file
-     std::this_thread::sleep_for(std::chrono::seconds(2));
-  }
+    mtx.lock();
+    viewer->AddPointCloud(cloud);
+    mtx.unlock();
 }
 
 void DisplayTrajectory(PCLViewer* viewer, const std::string& dir, const std::string& file, double resolution, int type)
@@ -317,7 +309,7 @@ void DisplayTrajectory(PCLViewer* viewer, const std::string& dir, const std::str
       //viewer->AddText(text, "text");
       if (type == -1)
       {
-        viewer->AddCoordinateSystem(camera,i,0,true);
+        viewer->AddCoordinateSystem(camera,i,2.0,0,true);
       }
       else if (type == -2)
       {
@@ -326,22 +318,22 @@ void DisplayTrajectory(PCLViewer* viewer, const std::string& dir, const std::str
       else if (type == -3)
       {
         if (i == 0 || i == cameras.size()-1){
-          viewer->AddCoordinateSystem(camera,i,1.0,0,true);
+          viewer->AddCoordinateSystem(camera,i,2.0,0,true);
         }
         else
         {
-            viewer->AddCoordinateSystem(camera,i,0.5,0,true);
+            viewer->AddCoordinateSystem(camera,i,1.0,0,true);
         }
         viewer->AddLine(startPt,endPt,i,0.0,0.0,0.0);
       }
-      else
+      else if (type == -4)
       {
         if (i == 0 || i == cameras.size()-1){
-          viewer->AddCoordinateSystem(camera,i,1.0,0,true);
+          viewer->AddCoordinateSystem(camera,i,2.0,0,true);
         }
         else
         {
-          viewer->AddCoordinateSystem(camera,i,0.5,0,true);
+          viewer->AddCoordinateSystem(camera,i,1.0,0,true);
         }
         viewer->AddLine(startPt,endPt,i,0.0,0.0,0.0);
         AddCubes(viewer, vCenters, std::to_string(i), voxelLen, 0, 1.0,0.0,0.0);
@@ -455,18 +447,18 @@ void GenerateViewpoints(PCLViewer* viewer,
   viewer->AddPointCloud(srcCloud,vp);
   // display voxel cube, camere view and frustum visible voxels
   double voxelLen = octree2.VoxelSideLength();
-  if (display == -2)
+  if (display == -1)
+  {
+    for (size_t i = 0; i < cameras.size(); ++i)
+      viewer->AddCoordinateSystem(cameras[i],i);
+  }
+  else if (display == -2)
   {
     WSPointCloudPtr vCloud = octree2.VoxelCentroidCloud();
     std::vector<WSPoint> centroids;
     for (size_t i = 0; i < vCloud->points.size(); ++i)
       centroids.push_back(vCloud->points[i]);
     AddCubes(viewer, centroids, "octree_voxel", voxelLen, vp, 0.0,0.0,1.0);
-  }
-  else if (display == -1)
-  {
-    for (size_t i = 0; i < cameras.size(); ++i)
-      viewer->AddCoordinateSystem(cameras[i],i);
   }
   else if (display == -3)
   {
@@ -482,7 +474,7 @@ void GenerateViewpoints(PCLViewer* viewer,
       centroids.push_back(octree2.VoxelCentroid(voxelUncoveredVec[i]));
     AddCubes(viewer, centroids, "uncovered voxel", voxelLen, vp, 1.0,0.0,0.0);
   }
-  else
+  else if (display == -5)
   {
     int camereIndex = 161;
     std::string name("view_frustum");

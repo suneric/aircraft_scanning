@@ -13,9 +13,9 @@ class trajectory_defined:
         self.trajectory = []
         self.index = 0
         self.transform_util = QuadrotorTransform()
-        file = os.path.join(sys.path[0],'../../aircraft_scanning_plan/trajectory/uav/viewpoints.txt');
-        #self._load_trajectory(file)
-        self._create_trajectory()
+        file = os.path.join(sys.path[0],'../../aircraft_scanning_plan/viewpoint/uav_scanning/acobest_f3.txt');
+        self._load_trajectory(file)
+        #self._create_trajectory()
         #self._create_wing_trajectory()
 
 

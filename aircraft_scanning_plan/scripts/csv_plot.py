@@ -125,22 +125,13 @@ def plotCompareMCTS_RC():
     iteration = [1039,972,987,928,1789,978,900,1130,1085,1008,1190]
 
     fig = go.Figure()
-    title = "Monte Carlo Tree Search Reward Control Parameter"
-    fig.add_trace(go.Scatter(x = rc, y = iteration, name="coverage (%)", marker=dict(color="#ff5511")))
+    title = "MCTS - Reward Control Parameter"
+    fig.add_trace(go.Scatter(x = rc, y = iteration, name="coverage (%)", marker=dict(color="#552233")))
 
     fig.update_layout(
         title=title,
-        xaxis_title="Reward Control Parameter ($\sigma$)",
+        xaxis_title="$\sigma$",
         yaxis_title="Number of Iteration for 100% Coverage",
-        legend=dict(
-            x=0.6,
-            y=0.1,
-            font=dict(
-                family="Arial",
-                size=17,
-                color="Black"
-            )
-        ),
         font=dict(
             family="Arial",
             size=20,

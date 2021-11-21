@@ -112,6 +112,8 @@ def getParameters():
     parser.add_argument('--compare', type=str, default=None, help="compare type of test, ACO or MCTS")
     parser.add_argument('--coverage', type=float, default=0.92, help="target coverage of test")
     parser.add_argument('--savebest', type=str ,default=None, help="path to save best trajectory")
+
+    parser.add_argument('--alter',type=bool, default=False)
     return parser.parse_args()
 
 ############################################################
@@ -141,6 +143,10 @@ if __name__ == "__main__":
         compareACO(vps, args.savebest, args.coverage)
     elif args.compare == "MCTS":
         compareMCTS(vps, args.savebest, args.coverage)
+
+    if args.alter:
+        alteredVps = alterTour(vps)
+        vpGenerator.save(os.path.join(args.savebest,"altered.txt"), alteredVps)
 
     # draw
     plotHelper = PlotHelper(width=12,height=12,map=map)

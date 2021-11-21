@@ -59,6 +59,33 @@ def nearestViewpoint(pos, vps):
     print("nearest viewpoint index is {} for pos ({},{},{})".format(i,x,y,z))
     return i
 
+"""
+A problem with Nearest Neighbors is outliers. It seems that picking up an outlier is sometimes
+a good idea, but sometimes going directly to the nearest neighbor is a better idea. It is
+difficult to make the choice between an outlier and a nearest neighbor while awe are constructing
+a tour, because we don't have the context of the whole tour yet. One way we could try to imporve
+a tour us by reversing a segement
+"""
+def reverseSegementIfBetter(tour,i,j):
+    """If reversing tour[i:j] would make the tour shorter, then do it."""
+    A,B,C,D = tour[i-1],tour[i],tour[j-1],tour[j%len(tour)]
+    if vpDistance(A,B)+vpDistance(C,D) > vpDistance(A,C)+vpDistance(B,D):
+        tour[i:j]=reversed(tour[i:j])
+
+def allSegments(N):
+    return [(start,start+length) for length in range(N,2-1,-1) for start in range(N-length+1)]
+
+def tourLength(tour):
+    return sum(vpDistance(tour[i],tour[i-1]) for i in range(len(tour)))
+
+def alterTour(tour):
+    original_length = tourLength(tour)
+    for (start,end) in allSegments(len(tour)):
+        reverseSegementIfBetter(tour,start,end)
+    if tourLength(tour) < original_length:
+        return alterTour(tour)
+    return tour
+
 class ViewPointUtil(object):
     def __init__(self, vps, actDim=None, cn=0.3):
         self.voxels = set()

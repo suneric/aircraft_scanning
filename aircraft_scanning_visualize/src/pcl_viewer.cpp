@@ -180,7 +180,7 @@ void PCLViewer::AddLine(const WSPoint& startPt, const WSPoint& endPt, int idx, d
   std::string id("line_");
   id.append(std::to_string(idx));
   m_viewer->addLine(startPt,endPt,r,g,b,id,vp);
-  m_viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_LINE_WIDTH, 2, id);
+  m_viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_LINE_WIDTH, 5, id);
 }
 
 void PCLViewer::AddPolygon(const WSPointCloudPtr& polygon, const std::string& id, double r, double g, double b, int vp)
