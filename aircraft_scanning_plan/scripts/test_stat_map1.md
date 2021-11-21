@@ -58,7 +58,7 @@ rho=0.05|rho=0.2|rho=0.5
 
 - SCP+ACO:
 - best solution: 26 viewpoints selected, travel distance is 138.13 meters.
-<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/results/acobest_1.tif" width=50% height=50%>
+<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/results/acobest_1.png" width=50% height=50%>
 
 - MCTS:
   - neighborhood viewpoints control parameter: 0.5
@@ -67,6 +67,6 @@ rho=0.05|rho=0.2|rho=0.5
 
   - number of neighborhood viewpoints: 3
   - Number of iteration required to achieve 100% coverage
-<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/results/mcts_sigma.tif" width=50% height=50%>
+<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/results/mcts_sigma.png" width=50% height=50%>
   - best solution: 25 viewpoints selected, travel distance is 168 meters, altered = 173.8 meters
-<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/results/mctsbest_1.jpeg" width=50% height=50%>
+<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/results/mctsbest_1.png" width=50% height=50%>

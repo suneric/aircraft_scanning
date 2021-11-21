@@ -14,14 +14,8 @@
 
 - SCP+ACO
   - 91 viewpoints selected, travel distance is 640.16 meters
-<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/results/acobest_2.tif" width=50% height=50%>  
-
-  - dense model
-<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/results/densemodel_aco.tif" width=50% height=50%>  
+<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/results/acobest_2.png" width=50% height=50%>  
 
 - MCTS
  - 68 viewpoints selected, altered travel distance is 576.93 meters, coverage is 82.04%, terminated e = 0.1, simulation iteration count 100,000   
-<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/results/mctsbest_2.tif" width=50% height=50%>   
-
- - dense model
-<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/results/densemodel_mcts.tif" width=50% height=50%>  
+<img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/results/mctsbest_2.png" width=50% height=50%>   
