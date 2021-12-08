@@ -14,7 +14,7 @@
           <pose>0 0 0 0 0 0</pose>
           <geometry>
             <mesh>
-              <uri>/home/yufeng/catkin_ws/src/aircraft_scanning/aircraft_scanning_gazebo/Media/models/Airliner_757.obj</uri>
+              <uri>/home/yufeng/catkin_ws/src/aircraft_scanning/aircraft_scanning_gazebo/media/models/Airliner_757.obj</uri>
             </mesh>
           </geometry>
           <material>
@@ -34,7 +34,7 @@
           <pose frame=''>0 0 0 0 -0 0</pose>
           <geometry>
             <mesh>
-              <uri>/home/yufeng/catkin_ws/src/aircraft_scanning/aircraft_scanning_gazebo/Media/models/Airliner_757.obj</uri>
+              <uri>/home/yufeng/catkin_ws/src/aircraft_scanning/aircraft_scanning_gazebo/media/models/Airliner_757.obj</uri>
               <scale>1 1 1</scale>
             </mesh>
           </geometry>

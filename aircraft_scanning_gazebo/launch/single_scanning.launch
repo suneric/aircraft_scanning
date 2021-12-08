@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="world" default="airplane_1"/>
+  <!-- load world with aircraft -->
+  <include file="$(find aircraft_scanning_gazebo)/launch/scene.launch">
+    <arg name="world" value="$(find aircraft_scanning_gazebo)/worlds/$(arg world).world"/>
+  </include>
+
+  <!--spawn quadrotor with realsense d435 camera-->
+  <include file="$(find aircraft_scanning_gazebo)/launch/spawn_quadrotor.launch" >
+    <arg name="x" value="3"/>
+    <arg name="y" value="1"/>
+    <arg name="z" value="0.3"/>
+  </include>
+
+  <!--add visualize and data process -->
+  <include file="$(find aircraft_scanning_control)/launch/uav_auto_scanning.launch"/>
+
+</launch>

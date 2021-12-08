@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
   <!-- load world with aircraft -->
-  <include file="$(find aircraft_scanning_gazebo)/launch/airliner757.launch"/>
+  <include file="$(find aircraft_scanning_gazebo)/launch/scene.launch"/>
 
   <!--spawn quadrotor with realsense d435 camera-->
   <include file="$(find aircraft_scanning_gazebo)/launch/spawn_mmrobot.launch" >
