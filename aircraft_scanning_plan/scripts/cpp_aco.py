@@ -479,6 +479,7 @@ if __name__ == '__main__':
     vpGenerator = ViewPointGenerator()
     vps = vpGenerator.load(os.path.join(args.load, args.vpsfile))
 
+    t0 = time.clock()
     startIdx = 0#np.random.randint(len(vps))
     scp = SCPSolver(vps,startIdx,coverage=args.tc)
     minvps = scp.computeMinimumCoveringViewpoints(iter=args.scIter)
@@ -491,6 +492,8 @@ if __name__ == '__main__':
     tspACO = ACO(vps=minvps, startIdx=startIdx, ants=ants, alpha=args.alpha, beta=args.beta, rho=args.rho)
     progress, bestvps = tspACO.run(args.acIter)
 
+    t1 = time.clock()
+    print("computation time: {:.3f}".format(t1-t0))
     # save trajectory
     vpGenerator.save(os.path.join(args.load, args.trajfile),bestvps)
     # save training statistics

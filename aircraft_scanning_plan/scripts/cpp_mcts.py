@@ -276,6 +276,7 @@ if __name__ == "__main__":
     util = ViewPointUtil(vps=vps, actDim=args.ad, cn=args.cn)
     util.buildNeighborMap()
 
+    t0 = time.clock()
     # monte carlo tree search
     startIdx = 0 #np.random.randint(len(vps))
     startVp = util.viewpoints[startIdx]
@@ -283,6 +284,8 @@ if __name__ == "__main__":
     root = MCTSNode(util,initState,parent=None)
     mcts = MonteCarloTreeSearch(util,root,cparam=args.cp,decay=args.dr,targetCoverage=args.tc)
     node, progress = mcts.search(iteration=args.sn,fe=args.fe)
+    t1 = time.clock()
+    print("computational time: {:.3f}".format(t1-t0))
 
     bestvps, coverage = mcts.test()
 

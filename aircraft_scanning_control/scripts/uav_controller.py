@@ -16,6 +16,9 @@ from hector_uav_msgs.srv import EnableMotors
 
 #######################
 # controller for controlling the quadrotor pose and camera joint posetion
+# position tolerance 0.05 m
+# yaw tolerance 0.35 rad
+# frequency: 10 hz
 class uav_cam_controller:
     def __init__(self):
         self.camerapose = None

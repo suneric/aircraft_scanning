@@ -12,6 +12,7 @@ from sensor.camera import realsense_d435
 from sensor.image import depth_img, color_img
 from sensor.pointcloud import data_capture
 
+import time
 import os
 import glob
 import struct
@@ -28,6 +29,8 @@ class auto_scanning:
         self.status = 'ready' # 'completed', 'ready'
 
         self.trajectory = trajectory_defined()
+        self.ts = 0
+        self.te = 0
 
     def is_takeoff(self):
         return self.takeoff
@@ -35,11 +38,14 @@ class auto_scanning:
         return self.landing
 
     def start(self):
+        self.ts = time.clock()
         self.controller.takeoff(self._takeoff_callback)
 
     def terminate(self):
+        self.te = time.clock()
         self.controller.landing()
         self.landing == True
+        print("Operation time {:.3f} secs".format(self.te-self.ts))
 
     def fly(self):
         while True:
