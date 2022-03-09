@@ -28,7 +28,7 @@
 ### Comparison
 
 - SCP+ACO (working distance = 3 meters), scIter 1000, ants 100, acIter 2000, alpha 1, beta 2, rho 0.05
-  - 109 viewpoints selected, travel distance is 195.39 meters, computational cost: 903.79 s
+  - 109 viewpoints selected, travel distance is 195.39 meters, computational cost: 903.79 s, 5 minutes at 550 iterations
 <img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/results/acobest_f3.png" width=50% height=50%>
 
   - dense model: operation time: 908 s
