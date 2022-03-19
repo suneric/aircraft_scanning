@@ -114,6 +114,7 @@ def getParameters():
     parser.add_argument('--savebest', type=str ,default=None, help="path to save best trajectory")
 
     parser.add_argument('--alter',type=bool, default=False)
+    parser.add_argument('--mirror', type=bool, default=False)
     return parser.parse_args()
 
 ############################################################
@@ -147,6 +148,10 @@ if __name__ == "__main__":
     if args.alter:
         alteredVps = alterTour(vps)
         vpGenerator.save(os.path.join(args.savebest,"altered.txt"), alteredVps)
+
+    if args.mirror:
+        mirrorVps = mirrorTour(vps)
+        vpGenerator.save(os.path.join(args.savebest,"mirrored.txt"), mirrorVps)
 
     # draw
     plotHelper = PlotHelper(width=12,height=12,map=map)

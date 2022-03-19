@@ -177,12 +177,10 @@ catch (const std::exception& e)
 
 void UpdatePointCloud(PCLViewer* viewer, const std::string& dir, bool bFilter,double resolution)
 {
-  // add a new thread for spin the viewer
-  //std::thread t(ViewerSpin, viewer);
-  std::vector<std::string> files;
-  WSPointCloudPtr cloud(new WSPointCloud());
-
-  int all = 0;
+    // add a new thread for spin the viewer
+    //std::thread t(ViewerSpin, viewer);
+    std::vector<std::string> files;
+    WSPointCloudPtr cloud(new WSPointCloud());
 
     std::vector<std::string> allfiles;
     boost::filesystem::directory_iterator itr(dir);
@@ -191,14 +189,15 @@ void UpdatePointCloud(PCLViewer* viewer, const std::string& dir, bool bFilter,do
       if (boost::filesystem::is_regular_file(itr->status()));
         allfiles.push_back(itr->path().string());
     }
-    all = allfiles.size();
+    int all = allfiles.size();
     bool bNewCloud = false;
-    for (const auto& file : allfiles)
+    for (int i = 0; i < all; i++)
     {
+        std::string file = allfiles[i];
         std::vector<std::string>::iterator end = files.end();
         if (std::find(files.begin(),files.end(),file) == files.end())
         {
-            std::cout << "pcl == load " << all << " point cloud from " << file << std::endl;
+            std::cout << "pcl == load " << std::to_string(i) << "/" << all << " point cloud from " << file << std::endl;
             WSPointCloudPtr temp(new WSPointCloud());
             int res = pcl::io::loadPCDFile(file, *temp);
             if(res < 0)
@@ -261,7 +260,7 @@ void DisplayTrajectory(PCLViewer* viewer, const std::string& dir, const std::str
       name.append(std::to_string(i));
       WSPointCloudPtr pts = outsidePolygons[i];
       // std::cout << name << std::endl;
-      viewer->AddPolygon(pts,name,0.0,0.0,1.0);
+      // viewer->AddPolygon(pts,name,0.0,0.0,1.0);
     }
     mtx.unlock();
   }

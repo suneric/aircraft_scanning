@@ -5,7 +5,7 @@ project(aircraft_scanning_visualize)
 add_compile_options(-std=c++11)
 
 find_package(catkin REQUIRED COMPONENTS roscpp std_msgs)
-find_package(PCL 1.7.2 REQUIRED COMPONENTS common io kdtree filters features surface keypoints octree recognition sample_consensus search segmentation stereo tracking visualization)
+find_package(PCL 1.8.1 REQUIRED COMPONENTS common io kdtree filters features surface keypoints octree recognition sample_consensus search segmentation stereo tracking visualization)
 find_package(OpenCV REQUIRED COMPONENTS core imgproc highgui)
 
 catkin_package(

@@ -73,6 +73,52 @@ cd ~/catkin_ws/src/aircraft_scanning/aircraft_scanning_plan/scripts/
 python mcts_train.py --sn <simulation count> --ad <neighbors count> --tc <terminal coverge> --cp <control param> --dr <decay ratio> --fe <final epsilon>
 ```
 
+## point cloud process
+- merge multiple pcd file into one file: asv3d -m folder filter[0|1] resolution[0.05 meters]
+```
+cd catkin_ws
+devel/lib/aircraft_scanning_visualize/asv3d -m ~/Temp/Scanning/ 1 0.05
+```
+
+- visualize point cloud and trajectory: asv3d -v folder resolution[1.0 meter] display[-1|-2|-3|-4|other] trajectory[optional]
+```
+cd catkin_ws
+devel/lib/aircraft_scanning_visualize/asv3d -v ~/Temp/Data/ 1.0 -1 trajectory.txt  
+```
+
+- generate viewpoints: asv3d -t folder distance[3.0 meters] resolution[1.0 meter] display[-1|-2|-3|-4|other] config[optional]
+```
+cd catkin_ws
+devel/lib/aircraft_scanning_visualize/asv3d -t ~/Temp/Data/ 3.0 1.0 -1 ~/catkin_ws/src/aircraft_scanning/aircraft_scanning_visualize/cofig/fuselage.txt
+```
+## trajectory generation
+```
+cd catkin_ws/src/aircraft_scanning/aircraft_scanning_plan/scripts/
+```
+
+- SCP+ACP
+
+```
+python cpp_aco.py --load folder --vpsfile vps.txt --trajfile traj.txt --scIter 1000 --acIter 2000 --ants 100 --alpha 1 --beta 2 --rho 0.05
+```
+- MCTS
+
+```
+python cpp_mcts.py --load folder --vpsfile vps.txt --trajfile traj.txt --cn 0.9 --ad 6 --tc 1 --cp 0.9 --dr 0.99999 --fe 0.1 --sn 1000000
+```
+
+- Alter trajectory
+
+```
+python test.py --loadvps folder --vpsfile vps.txt --savebest folder --alter True
+```
+
+- Mirror trajectory (y-zplane)
+```
+python test.py --loadvps folder --vpsfile vps.txt --savebest folder --mirror True
+```
+
+
 ## Developer
 Yufeng Sun | sunyf@mail.uc.edu | IRAS Lab @ University of Cincinnati
 

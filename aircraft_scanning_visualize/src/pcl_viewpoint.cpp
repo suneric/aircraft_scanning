@@ -36,6 +36,9 @@ Eigen::Affine3f PCLViewPoint::CameraPosition(const Eigen::Vector3f& target,const
 {
   Eigen::Vector3f nm = normal.normalized();
   Eigen::Vector3f pt = target + distance*nm;
+  if (pt.z() < 0.5)
+    pt = target + 0.5*distance*nm;
+
   return CameraMatrix(pt,-nm);
 }
 

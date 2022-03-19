@@ -6,6 +6,8 @@ from math import *
 from geometry_msgs.msg import Pose
 import copy
 
+from tf.transformations import *
+
 MAXVALUE = 1000000
 
 """
@@ -85,6 +87,25 @@ def alterTour(tour):
     if tourLength(tour) < original_length:
         return alterTour(tour)
     return tour
+
+def mirrorTour(tour):
+    """reflect plane y-z point (0,0,0), normal (1,0,0)"""
+    M0 = reflection_matrix((0,0,0), (1,0,0))
+    mvps = []
+    for vp in tour:
+        p = vp.camera.position
+        q = vp.camera.orientation
+        print(p,q)
+        mp = np.array((p.x,p.y,p.z,1.0))*np.matrix(M0)
+        mp = np.squeeze(np.asarray(mp))
+        # mq = quaternion_matrix((q.x,q.y,q.z,q.w))*np.matrix(M0)
+        # mq = quaternion_from_matrix(mq)
+        mq = (q.x,-q.y,-q.z,q.w)
+        # print(mp,mq)
+        mvp = ViewPoint(vp.id+10000,mp[0],mp[1],mp[2],mq[0],mq[1],mq[2],mq[3])
+        mvps.append(mvp)
+    return mvps
+
 
 class ViewPointUtil(object):
     def __init__(self, vps, actDim=None, cn=0.3):

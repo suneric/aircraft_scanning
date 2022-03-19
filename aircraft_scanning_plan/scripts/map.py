@@ -225,13 +225,16 @@ class ViewPointGenerator:
                      + str(vp.camera.orientation.y) + " "\
                      + str(vp.camera.orientation.z) + " "\
                      + str(vp.camera.orientation.w) + " "
-                i = 0
-                for v in vp.voxels:
-                    if i == len(vp.voxels)-1:
-                        line += str(v) + "\n"
-                    else:
-                        line += str(v) + " "
-                    i += 1
+                if not vp.voxels:
+                    line += "\n"
+                else:
+                    i = 0
+                    for v in vp.voxels:
+                        if i == len(vp.voxels)-1:
+                            line += str(v) + "\n"
+                        else:
+                            line += str(v) + " "
+                            i += 1
                 writer.write(line)
         writer.close()
         print("save viewpoints to file {}.".format(file))

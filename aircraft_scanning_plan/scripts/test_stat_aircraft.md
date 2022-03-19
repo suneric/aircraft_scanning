@@ -1,10 +1,14 @@
 ## TEST for aircraft scanning
 - SCP+ACP
-```python cpp_aco.py --load ../viewpoint/uav_scanning/ --vpsfile fuselage-d3r1-fov8080.txt --scIter 1000 --acIter 2000 --ants 100 --alpha 1 --beta 2 --rho 0.05
+
+```
+python cpp_aco.py --load ../viewpoint/uav_scanning/ --vpsfile fuselage-d3r1-fov8080.txt --scIter 1000 --acIter 2000 --ants 100 --alpha 1 --beta 2 --rho 0.05
 ```
 - MCTS
-```python cpp_mcts.py --load ../viewpoint/uav_scanning/ --vpsfile fuselage-d3r1-fov8080.txt --cn 0.9 --ad 6 --tc 1 --cp 0.9 --dr 0.99999 --fe 0.1 --sn 1000000```
 
+```
+python cpp_mcts.py --load ../viewpoint/uav_scanning/ --vpsfile fuselage-d3r1-fov8080.txt --cn 0.9 --ad 6 --tc 1 --cp 0.9 --dr 0.99999 --fe 0.1 --sn 1000000
+```
 
 ### Experiment Environment
 - Target Aircraft
@@ -40,3 +44,8 @@
 
   - dense model: operation time: 526 s
  <img src="https://github.com/suneric/aircraft_scanning/blob/master/aircraft_scanning_plan/scripts/results/densemodel_mcts.png" width=50% height=50%>  
+
+
+ ### Upper
+ - SCP + ACO
+  - 2033 seconds
