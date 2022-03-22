@@ -89,7 +89,7 @@ devel/lib/aircraft_scanning_visualize/asv3d -v ~/Temp/Data/ 1.0 -1 trajectory.tx
 - generate viewpoints: asv3d -t folder distance[3.0 meters] resolution[1.0 meter] display[-1|-2|-3|-4|other] config[optional]
 ```
 cd catkin_ws
-devel/lib/aircraft_scanning_visualize/asv3d -t ~/Temp/Data/ 3.0 1.0 -1 ~/catkin_ws/src/aircraft_scanning/aircraft_scanning_visualize/cofig/fuselage.txt
+devel/lib/aircraft_scanning_visualize/asv3d -t ~/Temp/Data/ 3.0 1.0 -1 ~/catkin_ws/src/aircraft_scanning/aircraft_scanning_visualize/config/fuselage.txt
 ```
 ## trajectory generation
 ```

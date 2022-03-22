@@ -64,8 +64,9 @@ class MCTSState(object):
         vpsState = copy.deepcopy(self.vpsState)
         voxelState = copy.deepcopy(self.voxelState)
 
-        # update  viewpoints and grids states
+        # update viewpoints and grids states
         vpsState[nextVp.id] = 1
+
 
         newCover = 0
         newOverlap = 0

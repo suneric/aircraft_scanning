@@ -164,9 +164,6 @@ int main(int argc, char** argv) try
     PrintHelp();
   }
 
-  if (bSave)
-    viewer.SavePointCloud(viewer.PointCloud(),dir);
-
   return task;
 }
 catch (const std::exception& e)
@@ -217,6 +214,7 @@ void UpdatePointCloud(PCLViewer* viewer, const std::string& dir, bool bFilter,do
 
     mtx.lock();
     viewer->AddPointCloud(cloud);
+    viewer->SavePointCloud(viewer->PointCloud(),dir);
     mtx.unlock();
 }
 
@@ -299,8 +297,8 @@ void DisplayTrajectory(PCLViewer* viewer, const std::string& dir, const std::str
         }
       }
       mtx.lock();
-      std::string text("viewpoint: ");
-      text.append(std::to_string(i+1)).append("/").append(std::to_string(cameras.size()));
+      // std::string text("viewpoint: ");
+      // text.append(std::to_string(i+1)).append("/").append(std::to_string(cameras.size()));
       //double dCoverage = 100.0*(double(coveredVoxels.size()) / double(totalVoxel));
       //std::string coverage(", total coverage: ");
       //coverage.append(std::to_string(dCoverage)).append(" %");
@@ -342,6 +340,7 @@ void DisplayTrajectory(PCLViewer* viewer, const std::string& dir, const std::str
     //  std::this_thread::sleep_for(std::chrono::seconds(1));
   }
 
+  std::cout << "total voxels " << totalVoxel << "covered voxels" << coveredVoxels.size() << '\n';
   std::cout << "trajectory length: " << distance << " meters." << std::endl;
 }
 

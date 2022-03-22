@@ -72,7 +72,7 @@ class auto_scanning:
 
     def _takeoff_callback(self):
         print("takeoff.")
-        pose = self._initial_pose(0,-30,8,0.5*pi,0)
+        pose = self._initial_pose(10,5,0.5,0.5*pi,0)
         self.controller.execute_quadrotor_pose(pose, self._initial_callback)
 
     def _initial_callback(self):

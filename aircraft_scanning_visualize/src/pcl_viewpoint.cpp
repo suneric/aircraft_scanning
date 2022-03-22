@@ -205,6 +205,7 @@ void PCLViewPoint::SaveToFile(const std::string& output,
                              std::map<int, std::vector<int> >& voxelMap)
 {
   std::ofstream tFile(output);
+  int vpIndex = 0;
   for (size_t i = 0; i < cameras.size(); ++i)
   {
     if (voxelMap[i].size() == 0){
@@ -213,7 +214,7 @@ void PCLViewPoint::SaveToFile(const std::string& output,
 
     Cartesion vp = CameraPose2ViewPoint(cameras[i]);
     // each line: viewpoint_idx px py pz ox oy oz ow voxel_indices ... \n
-    tFile << i << " " << vp.pos_x << " "
+    tFile << vpIndex << " " << vp.pos_x << " "
                       << vp.pos_y << " "
                       << vp.pos_z << " "
                       << vp.ori_x << " "
@@ -229,6 +230,7 @@ void PCLViewPoint::SaveToFile(const std::string& output,
       else
         tFile << " ";
     }
+    vpIndex++;
   }
   tFile.close();
 }
