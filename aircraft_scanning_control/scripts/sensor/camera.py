@@ -18,7 +18,7 @@ class realsense_d435:
         self.pixel = 0.003 # mm
         self.focal = np.array([1.93,1.93]) # mm
         self.principal = np.array([320,240]) # in pixel, could not be the center of the image
-        self.img_size = np.array([640,480])
+        self.img_size = np.array([500,500])
 
         self.bridge=CvBridge()
         # ros-realsense
@@ -59,7 +59,7 @@ class realsense_d435:
     def color_image(self):
         return color_img(self.cv_color)
     def point_cloud(self):
-        return pc2.read_points(self.points,skip_nans=True)
+        return self.points
 
     # private functions
     def _point_callback(self,data):

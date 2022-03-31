@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 
 <launch>
-  <arg name="world" default="$(find aircraft_scanning_gazebo)/worlds/airplane_2.world"/>
+  <arg name="world" default="$(find aircraft_scanning_gazebo)/worlds/aircraft_scanning_world.world"/>
   <arg name="gui" default="true"/>
   <arg name="args" default=""/>
 

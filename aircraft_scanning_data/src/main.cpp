@@ -7,7 +7,7 @@
 
 using namespace ssv3d;
 
-OctoMap map(0.5);
+OctoMap map(1.0);
 PCLProcess processor;
 PCLViewer viewer("3D Data Visualizer");
 
@@ -31,14 +31,14 @@ void DataCallback(const sensor_msgs::PointCloud2ConstPtr& msg)
     map.OccludedVoxels(occludedVoxels);
     map.OccupiedVoxels(occupiedVoxels);
     map.FreeVoxels(freeVoxels);
-    std::cout << "add point cloud to view..." << std::endl;
+    // std::cout << "add point cloud to view..." << std::endl;
     viewer.AddPointCloud(map.PointCloud());
-    for (size_t i=0; i < occupiedVoxels.size(); ++i)
-    {
-      Voxel3d v = occupiedVoxels[i];
-      viewer.AddCube(v.Center(), v.Length(), v.Id(), 0,0,1);
-      // viewer.AddArrow(v.Centroid(),v.Normal(),0.1,v.Id(),0.1,0,1,0);
-    }
+    // for (size_t i=0; i < occupiedVoxels.size(); ++i)
+    // {
+    //   Voxel3d v = occupiedVoxels[i];
+    //   viewer.AddCube(v.Center(), v.Length(), v.Id(), 0,0,1);
+    //   // viewer.AddArrow(v.Centroid(),v.Normal(),0.1,v.Id(),0.1,0,1,0);
+    // }
     // for (size_t i=0; i < freeVoxels.size(); ++i)
     // {
     //   Voxel3d v = freeVoxels[i];
@@ -63,15 +63,15 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "data_process");
   ros::NodeHandle nh;
 
-  Eigen::Vector3f vMin(-6.0,-6.0,0.0);
-  Eigen::Vector3f vMax(3.0,6.0,5.0);
+  Eigen::Vector3f vMin(-30.0,-30.0,0.0);
+  Eigen::Vector3f vMax(30.0,30.0,10.0);
 
   std::cout << "initialize..." << std::endl;
   map.CreateMap(vMin, vMax);
 
-  std::string vpTopic("/uav1/viewpoint");
+  std::string vpTopic("/uav_scanning/viewpoint");
   ros::Subscriber vpSub = nh.subscribe<std_msgs::Float64MultiArray>(vpTopic,1,PoseCallback);
-  std::string ptTopic("/rs435/pointcloud");
+  std::string ptTopic("/uav_scanning/pointcloud");
   ros::Subscriber dataSub = nh.subscribe<sensor_msgs::PointCloud2>(ptTopic,1,DataCallback);
   ros::Rate r(10);
   while(!viewer.IsStop())

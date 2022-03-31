@@ -4,6 +4,7 @@ import numpy as np
 from math import *
 import pcl
 from camera import realsense_d435
+import sensor_msgs.point_cloud2 as pc2
 
 #######################
 class data_capture:
@@ -17,18 +18,18 @@ class data_capture:
     # scan and point could process
     # input point could, matrix of camera to global
     # pose: [quadrotor_pose, camera_joint]
-    def scan_and_save(self,mat):
-        pc = self.camera.point_cloud()
-        if pc == None:
+    def scan_and_save(self,pc,mat):
+        point = pc2.read_points(pc,skip_nans=True)
+        if point == None:
+            print("no data captured.")
             return
 
-        #print(mat)
-        cloud = self._cloud_process(pc,mat)
+        cloud = self._cloud_process(point,mat)
         if cloud != None:
             print("save data.")
             self._save_cloud(cloud)
         else:
-            print("no data captured.")
+            print("no data saved.")
 
     ### private functions
     def _cloud_process(self,cloud,mat):

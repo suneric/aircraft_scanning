@@ -3,7 +3,9 @@ import rospy
 import numpy as np
 from math import *
 from geometry_msgs.msg import Pose
-
+from sensor_msgs.msg import PointCloud2
+from std_msgs.msg import Float64MultiArray, MultiArrayDimension
+import sensor_msgs.point_cloud2 as pc2
 import transform
 from uav_trajectory import trajectory_defined
 from uav_controller import uav_cam_controller
@@ -31,6 +33,8 @@ class auto_scanning:
         self.trajectory = trajectory_defined()
         self.ts = 0
         self.te = 0
+        self.dataPub = rospy.Publisher('uav_scanning/pointcloud', PointCloud2, queue_size=1)
+        self.posePub = rospy.Publisher('uav_scanning/viewpoint', Float64MultiArray, queue_size=1)
 
     def is_takeoff(self):
         return self.takeoff
@@ -66,13 +70,26 @@ class auto_scanning:
     def _fly_callback(self):
         print("reached.")
         mat = self.controller.transform_q2c()
-        self.data.scan_and_save(mat)
-        # self.trajectory.explore_views(current_pose)
+        pc = self.camera.point_cloud()
+        self.data.scan_and_save(pc,mat) # save
+        # publish
+        if pc != None:
+            vp = Float64MultiArray()
+            vp.layout.dim.append(MultiArrayDimension())
+            vp.layout.dim.append(MultiArrayDimension())
+            vp.layout.dim[0].size=4
+            vp.layout.dim[1].size=4
+            vp.layout.dim[0].stride=4*4
+            vp.layout.dim[1].stride=4
+            vp.layout.data_offset=0
+            vp.data = mat.flatten().tolist()[0]
+            self.posePub.publish(vp)
+            self.dataPub.publish(pc)
         self.status = 'ready'
 
     def _takeoff_callback(self):
         print("takeoff.")
-        pose = self._initial_pose(10,5,0.5,0.5*pi,0)
+        pose = self._initial_pose(20,-30,5,0.5*pi,0)
         self.controller.execute_quadrotor_pose(pose, self._initial_callback)
 
     def _initial_callback(self):

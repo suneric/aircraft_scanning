@@ -13,11 +13,10 @@ class trajectory_defined:
         self.trajectory = []
         self.index = 0
         self.transform_util = QuadrotorTransform()
-        file = os.path.join(sys.path[0],'../../aircraft_scanning_plan/trajectory/uav/aco_belly_4.txt');
-        self._load_trajectory(file)
-        # self._create_trajectory()
+        file = os.path.join(sys.path[0],'../../aircraft_scanning_plan/trajectory/uav/aco_upper_left.txt');
+        # self._load_trajectory(file)
+        self._create_trajectory()
         #self._create_wing_trajectory()
-
 
     def completed(self):
         return self.index >= len(self.trajectory)
