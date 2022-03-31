@@ -12,5 +12,6 @@
 
   <!--inlcude auto scanning controller-->
   <include file="$(find aircraft_scanning_control)/launch/uav_auto_scanning.launch"/>
+  <!-- <include file="$(find aircraft_scanning_data)/launch/data_process.launch"/> -->
 
 </launch>

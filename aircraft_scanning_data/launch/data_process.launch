@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<launch>
+  <node name="data_process_node" pkg="aircraft_scanning_data" type="aircraft_scanning_data_node" output="screen" />
+</launch>

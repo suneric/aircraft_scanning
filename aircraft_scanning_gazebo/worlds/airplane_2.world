@@ -11,7 +11,7 @@
       <link name='airplane'>
         <pose>0 0 0 0 0 0</pose>
         <visual name='visual'>
-          <pose>0 0 0 1.5707963 0 -1.5707963</pose>
+          <pose>0 0 0 1.5707963 0 -3.1415926</pose>
           <geometry>
             <mesh>
               <uri>/home/yufeng/catkin_ws/src/scene_scanning/ss_gazebo/media/models/airplane_2/Boeing757.obj</uri>
@@ -31,7 +31,7 @@
         <collision name='collision'>
           <laser_retro>0</laser_retro>
           <max_contacts>10</max_contacts>
-          <pose frame=''>0 0 0 1.5707963 0 -1.5707963</pose>
+          <pose frame=''>0 0 0 1.5707963 0 -3.1415926</pose>
           <geometry>
             <mesh>
               <uri>/home/yufeng/catkin_ws/src/scene_scanning/ss_gazebo/media/models/airplane_2/Boeing757.obj</uri>
