@@ -30,13 +30,18 @@ class CPPEnv(object):
     def __init__(self,util):
         self.util = util
         self.vpsState = [0]*len(self.util.viewpoints)
+        self.voxelCount = len(self.util.voxels)
         self.voxelState = [0]*len(self.util.voxels)
         self.occupiedCount = len(np.nonzero(self.voxelState)[0])
 
-    def reset(self):
+    def reset(self,vpIdx=0):
         self.vpsState = [0]*len(self.util.viewpoints)
         self.voxelState = [0]*len(self.util.voxels)
         self.occupiedCount = len(np.nonzero(self.voxelState)[0])
+        startVp = self.util.viewpoints[vpIdx]
+        self.vpsState[vpIdx] = 1
+        for v in startVp.voxels:
+            self.voxelState[v] = 1
         return self.state()
 
     def step(self, action):
@@ -47,7 +52,7 @@ class CPPEnv(object):
             self.voxelState[v] = 1
         # calcuate reward
         occupiedCount_new = len(np.nonzero(self.voxelState)[0])
-        reward = occupiedCount_new - self.occupiedCount
+        reward = 100*(occupiedCount_new - self.occupiedCount)/self.voxelCount - 0.1
         self.occupiedCount = occupiedCount_new
         # return
         coverage = self.coverage()
@@ -62,11 +67,11 @@ class CPPEnv(object):
         return float(self.occupiedCount) / float(len(self.util.voxels))
 
 # multi layers perception
-def mlp_net(input_dim, output_dim, output_activation='softmax'):
-    inputs = keras.Input(shape=input_dim)
-    x = layers.Dense(256,activiation='relu')(x)
-    x = layers.Dense(64,activiation='relu')(x)
-    outputs = layers.Dense(output_dim, activiation = output_activation)(x)
+def mlp_net(inputs_dim, outputs_dim, outputs_activation='softmax'):
+    inputs = keras.Input(shape=inputs_dim)
+    x = layers.Dense(256, activation = 'relu')(inputs)
+    x = layers.Dense(64, activation = 'relu')(x)
+    outputs = layers.Dense(outputs_dim, activation = outputs_activation)(x)
     return keras.Model(inputs=inputs, outputs=outputs)
 
 """
@@ -74,8 +79,8 @@ Replay Buffer, strore experiences and calculate total rewards, advanteges
 the buffer will be used for update the policy
 """
 class ReplayBuffer:
-    def __init__(self, input_dim, action_size, size=1000):
-        self.obs_buf = np.zeros((size, input_dim), dtype=np.float32) # states
+    def __init__(self, input_shape, action_size, size=1000):
+        self.obs_buf = np.zeros((size, input_shape), dtype=np.float32) # states
         self.act_buf = np.zeros((size, action_size), dtype=np.float32) # action, based on stochasitc policy with teh probability
         self.rew_buf = np.zeros(size, dtype=np.float32) # step reward
         self.pred_buf = np.zeros((size, action_size), dtype=np.float32) # prediction: action probability, output of actor net
@@ -130,6 +135,14 @@ class ReplayBuffer:
         self.ptr, self.idx = 0, 0
         return data
 
+
+"""
+loss print call back
+"""
+class PrintLoss(keras.callbacks.Callback):
+    def on_epoch_end(self,epoch,logs={}):
+        print("epoch index", epoch+1, "loss", logs.get('loss'))
+
 """
 Actor net
 """
@@ -142,7 +155,7 @@ class Actor_Model:
         self.loss_printer = PrintLoss()
 
     def build_model(self, input_shape, action_size, lr):
-        model = conv_net(inputs_dim=input_shape, outputs_dim=action_size, outputs_activation="softmax")
+        model = mlp_net(inputs_dim=input_shape, outputs_dim=action_size, outputs_activation="softmax")
         model.compile(loss=self.ppo_loss, optimizer=keras.optimizers.Adam(learning_rate=lr))
         print(model.summary())
         return model
@@ -189,7 +202,7 @@ class Critic_Model:
         self.loss_printer = PrintLoss()
 
     def build_model(self, input_shape, lr):
-        model = conv_net(inputs_dim=input_shape, outputs_dim=1,outputs_activation="linear")
+        model = mlp_net(inputs_dim=input_shape, outputs_dim=1,outputs_activation="linear")
         model.compile(loss="mse",optimizer=keras.optimizers.Adam(learning_rate=lr))
         print(model.summary())
         return model
@@ -271,21 +284,24 @@ if __name__ == "__main__":
     env = CPPEnv(util)
     action_size = args.ad
     state_dim = len(util.voxels)
-    agent = PPOConvAgent(state_dim=state_dim, action_size=action_size, clip_ratio=0.2, lr_a=1e-4, lr_c=3e-4, beta=0.001)
+    agent = PPOAgent(state_dim=state_dim, action_size=action_size, clip_ratio=0.2, lr_a=1e-4, lr_c=3e-4, beta=0.001)
     buffer = ReplayBuffer(input_shape=state_dim, action_size=action_size, size=600)
 
-    t0 = time.clock()
+    vpIdx = 0
     success_counter = 0
     for ep in range(10000):
-        obs = env.reset()
+        obs = env.reset(vpIdx)
         epReturn, epLength = 0, 0
         for step in range(100):
-            pred, act, val = agent.action(obs)
-            done, r, n_obs, vp, coverage = env.step(act)
+            pred, act, val = agent.action([obs])
+            nbvps = util.neighbors(vpIdx,args.ad)
+            vpIdx = nbvps[act]
+            done, r, n_obs, vp, coverage = env.step(vpIdx)
+            # print(act, vp.id, r, coverage)
             buffer.store(obs,tf.one_hot(act,action_size).numpy(),r,pred,val)
             obs = n_obs
-            ep_return += r
-            ep_len += 1
+            epReturn += r
+            epLength += 1
             if done:
                 success_counter += 1
                 break;
@@ -296,10 +312,4 @@ if __name__ == "__main__":
         size = buffer.size()
         if size >= 500 or (ep+1) == args.max_ep:
             print("ppo training with ",size," experiences...")
-            agent.train(data=buffer.get(), batch_size=size, iter_a=iter_a, iter_c=iter_c)
-
-
-
-
-    t1 = time.clock()
-    print("computational time: {:.3f}".format(t1-t0))
+            agent.train(data=buffer.get(), batch_size=size, iter_a=80, iter_c=80)
