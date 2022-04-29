@@ -14,14 +14,14 @@
           <pose>0 0 0 0 0 1.5707963</pose>
           <geometry>
             <mesh>
-              <uri>/home/yufeng/catkin_ws/src/scene_scanning/ss_gazebo/media/models/building_1/10068_empire_state_building_v1_L3.obj</uri>
+              <uri>file://media/models/building_1/10068_empire_state_building_v1_L3.obj</uri>
               <scale>0.001 0.001 0.001</scale>
             </mesh>
           </geometry>
           <material>
             <lighting>1</lighting>
             <script>
-              <uri>/home/yufeng/catkin_ws/src/scene_scanning/ss_gazebo/media/models/building_1/10068_empire_state_building_v1_L3.mtl</uri>
+              <uri>file://media/models/building_1/10068_empire_state_building_v1_L3.mtl</uri>
             </script>
             <shader type='pixel'/>
           </material>
@@ -34,7 +34,7 @@
           <pose frame=''>0 0 0 0 0 -1.5707963</pose>
           <geometry>
             <mesh>
-              <uri>/home/yufeng/catkin_ws/src/scene_scanning/ss_gazebo/media/models/building_1/10068_empire_state_building_v1_L3.obj</uri>
+              <uri>file://media/models/building_1/10068_empire_state_building_v1_L3.obj</uri>
               <scale>0.001 0.001 0.001</scale>
             </mesh>
           </geometry>

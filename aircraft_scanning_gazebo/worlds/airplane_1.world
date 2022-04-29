@@ -14,14 +14,14 @@
           <pose>0 0 0 0 0 3.1415926</pose>
           <geometry>
             <mesh>
-              <uri>/home/yufeng/catkin_ws/src/scene_scanning/ss_gazebo/media/models/airplane_1/11804_Airplane_v2_l2.obj</uri>
+              <uri>file://media/models/airplane_1/11804_Airplane_v2_l2.obj</uri>
               <scale>0.01 0.01 0.01</scale>
             </mesh>
           </geometry>
           <material>
             <lighting>1</lighting>
             <script>
-              <uri>/home/yufeng/catkin_ws/src/scene_scanning/ss_gazebo/media/models/airplane_1/11804_Airplane_v2_l2.mtl</uri>
+              <uri>file://media/models/airplane_1/11804_Airplane_v2_l2.mtl</uri>
             </script>
             <shader type='pixel'/>
           </material>
@@ -34,7 +34,7 @@
           <pose frame=''>0 0 0 0 0 3.1415926</pose>
           <geometry>
             <mesh>
-              <uri>/home/yufeng/catkin_ws/src/scene_scanning/ss_gazebo/media/models/airplane_1/11804_Airplane_v2_l2.obj</uri>
+              <uri>file://media/models/airplane_1/11804_Airplane_v2_l2.obj</uri>
               <scale>0.01 0.01 0.01</scale>
             </mesh>
           </geometry>
