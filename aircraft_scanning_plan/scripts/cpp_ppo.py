@@ -22,10 +22,13 @@ from tensorflow.keras import layers
 import tensorflow.keras.backend as K
 import scipy.signal
 import os
-
+from datetime import datetime
 
 np.random.seed(124)
 
+"""
+Environments
+"""
 class CPPEnv(object):
     def __init__(self,util):
         self.util = util
@@ -42,37 +45,44 @@ class CPPEnv(object):
         self.vpsState[vpIdx] = 1
         for v in startVp.voxels:
             self.voxelState[v] = 1
-        return self.state()
 
-    def step(self, action):
+        nbvps = self.util.neighbors(vpIdx,args.ad)
+        obs = [startVp.camera.position.x,startVp.camera.position.y,startVp.camera.position.z]
+        for i in nbvps:
+            v = self.util.viewpoints[i]
+            obs.append(v.camera.position.x)
+            obs.append(v.camera.position.y)
+            obs.append(v.camera.position.z)
+
+        return obs, nbvps
+
+    def step(self, vpIdx):
         # move to new vp and update the status
-        self.vpsState[action] = 1
-        vp = self.util.viewpoints[action]
+        self.vpsState[vpIdx] = 1
+        vp = self.util.viewpoints[vpIdx]
         for v in vp.voxels:
             self.voxelState[v] = 1
         # calcuate reward
         occupiedCount_new = len(np.nonzero(self.voxelState)[0])
-        reward = 100*(occupiedCount_new - self.occupiedCount)/self.voxelCount - 0.1
+        reward = 100.0*(occupiedCount_new - self.occupiedCount)/self.voxelCount - 0.1
         self.occupiedCount = occupiedCount_new
         # return
         coverage = self.coverage()
         done = coverage == 1.0
-        obs = self.state()
-        return done, reward, obs, vp, coverage
 
-    def state(self):
-        return self.voxelState
+        nbvps = self.util.neighbors(vpIdx,args.ad)
+        obs = [vp.camera.position.x,vp.camera.position.y,vp.camera.position.z]
+        for i in nbvps:
+            v = self.util.viewpoints[i]
+            obs.append(v.camera.position.x)
+            obs.append(v.camera.position.y)
+            obs.append(v.camera.position.z)
+
+        # print(vpIdx, reward, coverage)
+        return done, reward, obs, vp, coverage, nbvps
 
     def coverage(self):
         return float(self.occupiedCount) / float(len(self.util.voxels))
-
-# multi layers perception
-def mlp_net(inputs_dim, outputs_dim, outputs_activation='softmax'):
-    inputs = keras.Input(shape=inputs_dim)
-    x = layers.Dense(256, activation = 'relu')(inputs)
-    x = layers.Dense(64, activation = 'relu')(x)
-    outputs = layers.Dense(outputs_dim, activation = outputs_activation)(x)
-    return keras.Model(inputs=inputs, outputs=outputs)
 
 """
 Replay Buffer, strore experiences and calculate total rewards, advanteges
@@ -91,7 +101,7 @@ class ReplayBuffer:
 
     def store(self, state, action, reward, prediction, value):
         #print("storing", state[0].shape, action.shape, reward, prediction.shape, value.shape)
-        self.obs_buf[self.ptr]=state[0]
+        self.obs_buf[self.ptr]=state
         self.act_buf[self.ptr]=action
         self.rew_buf[self.ptr]=reward
         self.pred_buf[self.ptr]=prediction
@@ -135,6 +145,16 @@ class ReplayBuffer:
         self.ptr, self.idx = 0, 0
         return data
 
+
+"""
+Agent NN
+"""
+def mlp_net(inputs_dim, outputs_dim, outputs_activation='softmax'):
+    inputs = keras.Input(shape=inputs_dim)
+    x = layers.Dense(32, activation = 'relu')(inputs)
+    x = layers.Dense(32, activation = 'relu')(x)
+    outputs = layers.Dense(outputs_dim, activation = outputs_activation)(x)
+    return keras.Model(inputs=inputs, outputs=outputs)
 
 """
 loss print call back
@@ -185,7 +205,7 @@ class Actor_Model:
         return digits
 
     def fit(self,states,y_true,epochs,batch_size):
-        self.actor.fit(states, y_true, epochs=epochs, verbose=0, shuffle=True, batch_size=batch_size, callbacks=[self.loss_printer])
+        self.actor.fit(states, y_true, epochs=epochs, verbose=0, shuffle=True, batch_size=batch_size,callbacks=[self.loss_printer])
 
     def save(self, path):
         self.actor.save_weights(path)
@@ -213,7 +233,7 @@ class Critic_Model:
         return digits
 
     def fit(self,states,y_true,epochs,batch_size):
-        self.critic.fit(states, y_true, epochs=epochs, verbose=0, shuffle=True, batch_size=batch_size, callbacks=[self.loss_printer])
+        self.critic.fit(states, y_true, epochs=epochs, verbose=0, shuffle=True, batch_size=batch_size,callbacks=[self.loss_printer])
 
     def save(self, path):
         self.critic.save_weights(path)
@@ -230,20 +250,19 @@ class PPOAgent:
         state_dim,
         action_size,
         clip_ratio=0.2,
-        lr_a=1e-4,
-        lr_c=3e-4,
+        lr_a=1e-3,
+        lr_c=3e-3,
         beta=1e-3
     ):
-        self.name = 'ppo_conv'
+        self.name = 'ppo_agent'
         self.action_size = action_size
         self.Actor = Actor_Model(state_dim,action_size,clip_ratio,lr_a,beta)
         self.Critic = Critic_Model(state_dim,lr_c)
 
     def action(self, state):
-        visual_state = np.expand_dims(state[0], axis=0)# visual state only
-        pred = np.squeeze(self.Actor.predict(visual_state), axis=0)
+        pred = np.squeeze(self.Actor.predict(state), axis=0)
         act = np.random.choice(self.action_size,p=pred) # index of actions
-        val = np.squeeze(self.Critic.predict(visual_state), axis=0)
+        val = np.squeeze(self.Critic.predict(state), axis=0)
         # print("prediction, action, value:", pred, act, val)
         return pred, act, val
 
@@ -267,7 +286,7 @@ def getParameters():
     parser.add_argument('--load', type=str, default=None)
     parser.add_argument('--vpsfile', type=str, default=None)
     parser.add_argument('--cn', type=float, default=0.5) # control parameter for neighbors choice
-    parser.add_argument('--ad', type=int, default=16) # action dimenstion, how many neighbors
+    parser.add_argument('--ad', type=int, default=6) # action dimenstion, how many neighbors
     parser.add_argument('--max_ep', type=int, default=10000)
 
     return parser.parse_args()
@@ -275,29 +294,38 @@ def getParameters():
 if __name__ == "__main__":
     args = getParameters()
 
+    # load viewpoints
     vpGenerator = ViewPointGenerator()
     vps = vpGenerator.load(os.path.join(args.load, args.vpsfile))
-
+    # build neighborhood map
     util = ViewPointUtil(vps=vps, actDim=args.ad, cn=args.cn)
     util.buildNeighborMap()
 
+    model_dir = os.path.join(sys.path[0],'..','saved',datetime.now().strftime("%Y-%m-%d-%H-%M"))
+    print("model is saved to", model_dir)
+    summary_writer = tf.summary.create_file_writer(model_dir)
+    summary_writer.set_as_default()
+
+    # create a environment
+    buffer_cap = 1000
+    train_freq = 800
     env = CPPEnv(util)
     action_size = args.ad
-    state_dim = len(util.voxels)
+    max_step = 150
+    state_dim = 3*(action_size+1) # x,y,z of the vp and its neighborhood vps
     agent = PPOAgent(state_dim=state_dim, action_size=action_size, clip_ratio=0.2, lr_a=1e-4, lr_c=3e-4, beta=0.001)
-    buffer = ReplayBuffer(input_shape=state_dim, action_size=action_size, size=600)
+    buffer = ReplayBuffer(input_shape=state_dim, action_size=action_size, size=buffer_cap)
 
-    vpIdx = 0
+
     success_counter = 0
-    for ep in range(10000):
-        obs = env.reset(vpIdx)
+    for ep in range(args.max_ep):
+        vpIdx = 0
+        obs, nbvps = env.reset(vpIdx)
         epReturn, epLength = 0, 0
-        for step in range(100):
+        for step in range(max_step):
             pred, act, val = agent.action([obs])
-            nbvps = util.neighbors(vpIdx,args.ad)
             vpIdx = nbvps[act]
-            done, r, n_obs, vp, coverage = env.step(vpIdx)
-            # print(act, vp.id, r, coverage)
+            done, r, n_obs, vp, coverage, nbvps = env.step(vpIdx)
             buffer.store(obs,tf.one_hot(act,action_size).numpy(),r,pred,val)
             obs = n_obs
             epReturn += r
@@ -306,10 +334,11 @@ if __name__ == "__main__":
                 success_counter += 1
                 break;
 
-        buffer.ep_update(gamma=0.99, lamda=0.97)
+        tf.summary.scalar("episode total reward", epReturn, step=ep+1)
         print("Episode:{},EpReturn:{},EpLength:{},Success:{}".format(ep+1, epReturn, epLength, success_counter))
 
+        buffer.ep_update(gamma=0.99, lamda=0.97)
         size = buffer.size()
-        if size >= 500 or (ep+1) == args.max_ep:
+        if size >= train_freq or (ep+1) == args.max_ep:
             print("ppo training with ",size," experiences...")
             agent.train(data=buffer.get(), batch_size=size, iter_a=80, iter_c=80)
