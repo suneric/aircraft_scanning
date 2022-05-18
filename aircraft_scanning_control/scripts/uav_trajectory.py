@@ -13,7 +13,7 @@ class trajectory_defined:
         self.trajectory = []
         self.index = 0
         self.transform_util = QuadrotorTransform()
-        file = os.path.join(sys.path[0],'../../aircraft_scanning_plan/trajectory/uav/aco_upper_left.txt');
+        # file = os.path.join(sys.path[0],'../../aircraft_scanning_plan/trajectory/uav/aco_upper_left.txt');
         # self._load_trajectory(file)
         self._create_trajectory()
         #self._create_wing_trajectory()
@@ -91,8 +91,8 @@ class trajectory_defined:
         self._create_updownpath([-8,-2],[27,21],8.0,0.5*pi,1)
 
         self._create_updownpath([-20,-6],[6,0],8.0,0.5*pi,1) # wing
-        self._create_updownpath([-6,-2],[0,-4],8.0,0.5*pi,1)
-        self._create_updownpath([2,6],[-4,0],8.0,0.5*pi,1)
+        self._create_updownpath([-6,-2],[4,-4],7.0,0.5*pi,1)
+        self._create_updownpath([2,6],[-4,4],7.0,0.5*pi,1)
         self._create_updownpath([6,20],[0,6],8.0,0.5*pi,1)
 
         # down part
@@ -147,17 +147,23 @@ class trajectory_defined:
         self._create_sidepath_y(5,[20,26],6,pi,0.0,3)
         self._create_sidepath_y(5,[27,22],8,pi,0.0,3)
         self._create_sidepath_y(5,[24,28],10,pi,0.0,3)
-        self._create_sidepath_x([0,0],30,12,-0.5*pi,0.0,2)
-        self._create_sidepath_x([0,0],30,9,-0.5*pi,0.0,2)
-        self._create_sidepath_x([0,0],30,5,-0.5*pi,0.0,2)
+        self._create_sidepath_y(5,[28,25],12,pi,0.0,3)
+        self._create_intermediate(0,24,16,0.5*pi,0.5*pi)
+        self._create_intermediate(0,26,16,0.5*pi,0.5*pi)
+        self._create_intermediate(0,28,16,0.5*pi,0.5*pi)
+        self._create_intermediate(0,30,12,-0.5*pi,0.0)
+        self._create_intermediate(0,30,9,-0.5*pi,0.0)
+        self._create_intermediate(0,30,5,-0.5*pi,0.0)
         self._create_sidepath_y(-5,[26,20],6,0,0.0,3)
         self._create_sidepath_y(-5,[22,27],8,0,0.0,3)
         self._create_sidepath_y(-5,[28,24],10,0,0.0,3)
-        self._create_sidepath_x([0,0],14,7,0.5*pi,0.0,2)
-        self._create_sidepath_x([0,0],16,9,0.5*pi,0.0,2)
-        self._create_sidepath_x([0,0],18,11,0.5*pi,0.0,2)
-        self._create_sidepath_x([0,0],20,13,0.5*pi,0.0,2)
+        self._create_sidepath_y(-5,[25,28],12,0,0.0,3)
+        self._create_intermediate(0,14,7,0.5*pi,0.0)
+        self._create_intermediate(0,16,9,0.5*pi,0.0)
+        self._create_intermediate(0,18,11,0.5*pi,0.0)
+        self._create_intermediate(0,20,13,0.5*pi,0.0)
 
+        # engine
         self._create_intermediate(-7,14,11,0.5*pi)
         self._create_intermediate(-7,14,2,0.5*pi)
         self._create_sidepath_x([-7,-7],3,2,-0.5*pi,0.0,1)

@@ -19,6 +19,7 @@ import os
 import glob
 import struct
 import ctypes
+import sys
 
 class auto_scanning:
     def __init__(self,controller,camera,data_processor):
@@ -112,7 +113,7 @@ class auto_scanning:
 # main
 if __name__ == '__main__':
     # clean folder for save point cloud file
-    temp_folder = "/home/yufeng/Temp/Scanning/"
+    temp_folder = os.path.join(sys.path[0],'..','data/temp/')
     files = glob.glob(temp_folder+"*")
     for f in files:
         print("remove ", f)
